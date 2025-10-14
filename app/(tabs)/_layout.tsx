@@ -1,33 +1,98 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useColorScheme } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import MapIcon from '../components/icons/MapIcon';
+import PlusIcon from '../components/icons/PlusIcon';
+import BellIcon from '../components/icons/BellIcon';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'light';
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: '#0F5132',  // Dark green for active tabs
+        tabBarInactiveTintColor: '#198754',  // Medium dark green for inactive tabs
         headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarStyle: {
+          backgroundColor: isDark ? '#fff' : '#000',
+          borderTopColor: isDark ? '#e0e0e0' : '#333',
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: '',
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons
+              name={focused ? 'home' : 'home-outline'}
+              size={size ? size + 6 : 30}
+              color={color}
+            />
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="map"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: '',
+          tabBarIcon: ({ color, focused, size }) => (
+            <MapIcon
+              size={size ? size + 6 : 30}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="create"
+        options={{
+          title: '',
+          tabBarIcon: ({ color, focused, size }) => (
+            <PlusIcon
+              size={size ? size + 16 + 6 : 46}
+              color={color}
+            />
+          ),
+          tabBarIconStyle: {
+            marginTop: -8,
+          },
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: '',
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons
+              name="notifications"
+              size={size ? size + 6 : 30}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: '',
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons
+              name="person"
+              size={size ? size + 6 : 30}
+              color={color}
+            />
+          ),
         }}
       />
     </Tabs>

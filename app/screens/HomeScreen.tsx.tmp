@@ -1,0 +1,336 @@
+import {
+  Text,
+  View,
+  StatusBar,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  Alert,
+  Modal,
+  Linking,
+  ScrollView,
+  Platform,
+  PermissionsAndroid,
+  Share,
+  RefreshControl,
+  Clipboard,
+  StyleSheet,
+  ImageErrorEventData,
+  NativeSyntheticEvent,
+  ViewStyle,
+  TextStyle
+} from 'react-native';
+import { Camera } from 'expo-camera';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import React, { useState, useEffect, useCallback } from "react";
+import { COLORS, SIZES } from "../../constants";
+import DummyFeedData from "../../data/DummyFeedData";
+import Feed from "../components/Feed";
+import ApiFeed from "../components/ApiFeed";
+import { authFeed } from "../../Redux/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import LoadingImage from "../components/loadingStates/LoadingImage";
+import TextButton from "../components/TextButton";
+import ErrorImage from "../components/loadingStates/ErrorImage";
+import { AUTH_FEEDS } from "../../Redux/URL";
+import axios, { AxiosError } from "axios";
+import { RootState } from "../../Redux/store";
+
+interface FeedItem {
+  id: string | number;
+  // Add other fields as needed
+}
+
+const Home = () => {
+  const [isReferModalVisible, setIsReferModalVisible] = useState(false);
+  const [accessToken, setAccessToken] = useState<string>("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [fetchedFeed, setFetchedFeed] = useState<FeedItem[]>([]);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isError, setError] = useState(false);
+  const [isLoading, setLoading] = useState(false);
+  
+  const dispatch = useDispatch();
+  const { loading, error, auth_feed, availableCoins } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    const getData = async () => {
+      try {
+        const value = await AsyncStorage.getItem("access_token");
+        if (value !== null) {
+          setAccessToken(value);
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    getData();
+  }, []);
+
+  function handleError(error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.data?.error) {
+        const errorMessage = error.response.data.error;
+        console.log("Server error:", errorMessage);
+        Alert.alert("Error", errorMessage);
+      } else if (error.request) {
+        console.log("Network error:", error.message);
+        Alert.alert(
+          "Error",
+          "Network error. Please check your internet connection and try again."
+        );
+      } else {
+        console.log("Error:", error.message);
+        Alert.alert("Error", error.message || "An unexpected error occurred");
+      }
+    } else if (error instanceof Error) {
+      console.log("Error:", error.message);
+      Alert.alert("Error", error.message);
+    } else {
+      console.log("Unknown error:", error);
+      Alert.alert("Error", "An unknown error occurred");
+    }
+  }
+
+  async function fetchFeed(accessToken: string) {
+    setLoading(true);
+    try {
+      const response = await axios.get(AUTH_FEEDS, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const feed = response?.data?.data;
+      if (feed) {
+        const feedData = Array.isArray(feed) ? feed : [];
+        setFetchedFeed(feedData);
+      } else {
+        console.log("No feed data in response");
+        throw new Error("No feed data received");
+      }
+    } catch (error) {
+      handleError(error);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (accessToken) {
+      fetchFeed(accessToken);
+    }
+  }, [accessToken]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchFeed(accessToken);
+    } catch (error) {
+      console.error('Error refreshing feed:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [accessToken]);
+
+  function refreshBtn() {
+    fetchFeed(accessToken);
+  }
+
+  if (loading) return <LoadingImage />;
+
+  if (error) {
+    return (
+      <View style={styles.errorStyle}>
+        <ErrorImage />
+        <Text
+          style={{
+            color: "red",
+            fontSize: 12,
+            fontWeight: "400",
+            textAlign: "center",
+          }}
+        >
+          Failed to load Feed, please check your network connection or click to
+          refresh
+        </Text>
+        <View style={{ alignItems: "center", justifyContent: "center" }}>
+          <TextButton
+            label="Refresh"
+            buttonContainerStyle={{
+              height: 50,
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: 20,
+              borderRadius: SIZES.radius,
+              backgroundColor: "#0E9C67",
+            }}
+            labelStyle={{
+              color: COLORS.white,
+              fontWeight: "700",
+              fontSize: 18,
+            }}
+            onPress={refreshBtn}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <Modal
+        visible={isReferModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsReferModalVisible(false)}>
+        <View style={styles.referModal}>
+          <View style={styles.modalContent}>
+            <View style={styles.iconContainer}>
+              <Image
+                source={require('../../assets/images/referral-icon.png')}
+                style={styles.icon}
+                resizeMode="contain"
+                onError={(e: NativeSyntheticEvent<ImageErrorEventData>) => 
+                  console.log('Failed to load image', e.nativeEvent.error)
+                }
+              />
+            </View>
+            <Text style={styles.headerText}>Refer a friend</Text>
+            <View style={styles.codeContainer}>
+              <Text style={styles.codeText}>
+                {availableCoins?.referral_code || 'No referral code available'}
+              </Text>
+              <TouchableOpacity
+                onPress={async () => {
+                  try {
+                    if (availableCoins?.referral_code) {
+                      await Clipboard.setString(availableCoins.referral_code);
+                      Alert.alert('Copied!', 'Referral code copied to clipboard');
+                    } else {
+                      Alert.alert('Error', 'Referral code not available');
+                    }
+                  } catch (err) {
+                    console.error('Failed to copy:', err);
+                    Alert.alert('Error', 'Failed to copy referral code');
+                  }
+                }}>
+                <FontAwesome name="copy" size={24} color={COLORS.primary} />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setIsReferModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <FlatList
+        data={Array.isArray(fetchedFeed) ? fetchedFeed : []}
+        renderItem={({ item }) => <ApiFeed item={item} />}
+        keyExtractor={(item) => item.id?.toString?.() || String(item.id)}
+        contentContainerStyle={{ ...styles.itemContainer }}
+        ListFooterComponent={<View style={{ height: 105 }} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: 25,
+    backgroundColor: "white",
+  } as ViewStyle,
+  top: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray3,
+    height: 30,
+    paddingHorizontal: 15,
+    marginTop: 20,
+  } as ViewStyle,
+  referModal: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  } as ViewStyle,
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 24,
+    borderRadius: 24,
+    width: '90%',
+    alignItems: 'center',
+  } as ViewStyle,
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.gray3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  } as ViewStyle,
+  icon: {
+    width: 64,
+    height: 64,
+  } as ViewStyle,
+  headerText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 8,
+    color: COLORS.primary,
+  } as TextStyle,
+  rightText: {
+    fontSize: 16,
+    color: COLORS.primary,
+  } as TextStyle,
+  codeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.gray3,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 32,
+    justifyContent: 'space-between',
+    width: '100%',
+  } as ViewStyle,
+  codeText: {
+    fontSize: 18,
+    fontWeight: '500',
+    flex: 1,
+  } as TextStyle,
+  closeButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  } as ViewStyle,
+  closeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  } as TextStyle,
+  itemContainer: {
+    flexGrow: 1,
+  } as ViewStyle,
+  errorStyle: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  } as ViewStyle,
+});
+
+export default Home;
