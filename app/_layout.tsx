@@ -83,8 +83,10 @@ export default function RootLayout() {
               <Stack.Screen name="screens/Authentication/Otp" />
               <Stack.Screen name="screens/Authentication/ForgetPassword" />
               <Stack.Screen name="screens/Authentication/SignUpSuccess" />
-              <Stack.Screen name="screens/Authentication/ResetPasswordEmail" />
-              <Stack.Screen name="screens/Authentication/ResetPassword" />
+              <Stack.Screen name="screens/HotspotSearch" />
+              <Stack.Screen name="screens/SettingsWrapper" />
+              <Stack.Screen name="screens/ReportContainer/MakeReport" />
+              <Stack.Screen name="screens/AudioRecordScreen" />
             </Stack>
           </ThemeProvider>
         </Provider>

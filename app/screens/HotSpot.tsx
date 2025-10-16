@@ -14,8 +14,10 @@ import { COLORS, icons } from "@/constants";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingImage from "../components/loadingStates/LoadingImage";
+import { useRouter } from "expo-router";
 
-const HotSpot = ({ navigation }: any) => {
+const HotSpot = () => {
+  const router = useRouter();
   const [categories, setCategories] = useState([]);
   const [reportCounts, setReportCounts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -77,7 +79,7 @@ const HotSpot = ({ navigation }: any) => {
       <View style={styles.secondContainer}>
         <TouchableOpacity
           style={styles.seachContainer}
-          onPress={() => navigation.navigate("HotspotSearch")}
+          onPress={() => router.push("/screens/HotspotSearch")}
         >
           <Image
             source={(icons.searchsharp || icons.anonymous) as unknown as ImageSourcePropType}

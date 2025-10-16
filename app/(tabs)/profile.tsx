@@ -1,33 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '@/constants';
+import { View } from 'react-native';
+import Profile from '../screens/Profile';
 
 export default function ProfileTab() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
-      <Text style={styles.subtitle}>User profile screen coming soon...</Text>
+    <View style={{ flex: 1 }}>
+      <Profile />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.lightGray2,
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: COLORS.darkGray,
-    textAlign: 'center',
-  },
-});

@@ -125,24 +125,9 @@ const notification = null;
 const profile = null;
 const setting = null;
 const user = null;
-const star = null;
-const wallet = null;
-const eyeseenicon = null;
-const help = null;
-const arrow_back = null;
-const plus_icon = null;
-const arrow_right = null;
-const likeicon = null;
-const ondemandvideo = null;
-const radioButtonChecked = null;
-const cloudUpload = null;
-const cameraIcon = null;
-const audioRecord = null;
-const infoicon = null;
-const anonymous = null;
-const datePicker = null;
-const SignUpSuccess = null;
 const bookmarkicon = null;
+const saveoutline = null;
+const folderoutline = null;
 const hourlessglass = null;
 const shareicon = null;
 const coin_bg = null;
@@ -157,9 +142,24 @@ const microphone_slash = null;
 const gifticon = null;
 const dotcircle = null;
 const circlestop = null;
-const saveoutline = null;
+const star = null;
+const wallet = null;
+const eyeseenicon = null;
+const help = null;
+const arrow_back = null;
+const plus_icon = null;
+const arrow_right = null;
+const likeicon = null;
+const ondemandvideo = null;
+const radioButtonChecked = null;
+const cloudUpload = null;
+const cameraIcon = null;
+const audioRecord = null;
+const anonymous = null;
+const datePicker = null;
 const themeicon = null;
 const microphoneicon = null;
+const SignUpSuccess = null;
 const questioncircleo = null;
 const flashicon = null;
 const playcircle = null;
@@ -167,7 +167,6 @@ const camerareverseicon = null;
 const arrowleft = null;
 const flashlightoutline = null;
 const staricon = null;
-const folderoutline = null;
 const sharesocialoutline = null;
 const minuscircleo = null;
 const tagfaces = null;
@@ -191,7 +190,7 @@ const CancelPNG = null;
 const threeDots = null;
 const refresh_btn = null;
 const swap = null;
-const citizenx = require("../assets/images/citizenx.png");
+const citizenx = null;
 
 export default {
   coupon,
@@ -233,7 +232,6 @@ export default {
   cloudUpload,
   cameraIcon,
   audioRecord,
-  infoicon,
   anonymous,
   datePicker,
   SignUpSuccess,

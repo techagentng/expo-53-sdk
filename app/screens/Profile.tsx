@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import type { ImageSourcePropType } from "react-native";
 import React, { useEffect, useState } from "react";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { COLORS, icons, SIZES } from "@/constants";
 import BottomTabFeed from "../components/BottomTabFeed";
@@ -24,6 +24,7 @@ import ErrorImage from "@/components/loadingStates/ErrorImage";
 import TextButton from "@/components/TextButton";
 import { HOST, PROFILE } from "@/Redux/URL";
 import axios from "axios";
+import { useRouter } from "expo-router";
 
 type RootStackParamList = {
   Profile: undefined;
@@ -33,18 +34,14 @@ type RootStackParamList = {
   SignIn: undefined;
 };
 
-type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList>;
-
-interface Props {
-  navigation: ProfileScreenNavigationProp;
-}
-
-const Profile: React.FC<Props> = ({ navigation }) => {
+const Profile = () => {
+  const router = useRouter();
   const [access_token, setAccess_token] = useState("");
   const [catchUser, setCatchUser] = useState({});
   const [isAppReady, setIsAppReady] = useState(false); // new state to control initial loading
   const [modalVisible, setModalVisible] = useState(false);
   const [isValidImage, setIsValidImage] = useState(false);
+  const [avatarMenuVisible, setAvatarMenuVisible] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error, user, availableCoins } = useSelector(
@@ -119,7 +116,7 @@ const Profile: React.FC<Props> = ({ navigation }) => {
   function loguserout() {
     dispatch(logout());
     setModalVisible(false);
-    navigation.navigate("SignIn");
+    router.replace("/screens/Authentication/SignIn");
   }
 
   function refreshBtn() {
@@ -215,18 +212,20 @@ const Profile: React.FC<Props> = ({ navigation }) => {
       </TouchableOpacity>
       <View style={{ marginTop: 10 }}>
         <View style={styles.profileContiner}>
-          <Image
-            source={
-              isValidImage ? { uri: user?.profileImage } : (icons.anonymous as unknown as ImageSourcePropType)
-            }
-            style={styles.profileImag}
-          />
+          <TouchableOpacity onPress={() => setAvatarMenuVisible(true)}>
+            <Image
+              source={
+                isValidImage ? { uri: user?.profileImage } : (icons.anonymous as unknown as ImageSourcePropType)
+              }
+              style={styles.profileImag}
+            />
+          </TouchableOpacity>
           <View style={styles.profileNameContainer}>
             <Text style={styles.fullName}>{user?.name}</Text>
             <Text style={styles.userName}>@{user?.username}</Text>
           </View>
 
-          <TouchableOpacity onPress={() => navigation.navigate("Coin")}>
+          <TouchableOpacity onPress={() => router.push("/screens/Coin")}>
             <ImageBackground
               source={(icons.coin_bg || icons.anonymous) as unknown as ImageSourcePropType}
               style={styles.coinImage}
@@ -301,7 +300,7 @@ const Profile: React.FC<Props> = ({ navigation }) => {
         >
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => navigation.navigate("EditProfile")}
+            onPress={() => router.push("/screens/EditProfile")}
           >
             <Image
               source={(icons.solution1icon || icons.anonymous) as unknown as ImageSourcePropType}
@@ -312,7 +311,7 @@ const Profile: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => navigation.navigate("Settings")}
+            onPress={() => router.push("/screens/SettingsWrapper")}
           >
             <Image
               source={(icons.setting || icons.anonymous) as unknown as ImageSourcePropType}
@@ -324,6 +323,86 @@ const Profile: React.FC<Props> = ({ navigation }) => {
         </View>
       </View>
       <BottomTabFeed />
+
+      {/* Avatar Menu Modal */}
+      <Modal animationType="fade" transparent={true} visible={avatarMenuVisible}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setAvatarMenuVisible(false)}
+        >
+          <View style={styles.avatarMenuContainer}>
+            <View style={styles.avatarMenuHeader}>
+              <Image
+                source={
+                  isValidImage ? { uri: user?.profileImage } : (icons.anonymous as unknown as ImageSourcePropType)
+                }
+                style={styles.avatarMenuImage}
+              />
+              <View style={styles.avatarMenuUserInfo}>
+                <Text style={styles.avatarMenuName}>{user?.name}</Text>
+                <Text style={styles.avatarMenuUsername}>@{user?.username}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.avatarMenuItem}
+              onPress={() => {
+                setAvatarMenuVisible(false);
+                router.push("/screens/Profile");
+              }}
+            >
+              <Image
+                source={(icons.user || icons.anonymous) as unknown as ImageSourcePropType}
+                style={styles.avatarMenuIcon}
+              />
+              <Text style={styles.avatarMenuItemText}>View Profile</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.avatarMenuItem}
+              onPress={() => {
+                setAvatarMenuVisible(false);
+                router.push("/screens/EditProfile");
+              }}
+            >
+              <Image
+                source={(icons.solution1icon || icons.anonymous) as unknown as ImageSourcePropType}
+                style={styles.avatarMenuIcon}
+              />
+              <Text style={styles.avatarMenuItemText}>Edit Profile</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.avatarMenuItem}
+              onPress={() => {
+                setAvatarMenuVisible(false);
+                router.push("/screens/SettingsWrapper");
+              }}
+            >
+              <Image
+                source={(icons.setting || icons.anonymous) as unknown as ImageSourcePropType}
+                style={styles.avatarMenuIcon}
+              />
+              <Text style={styles.avatarMenuItemText}>Settings</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.avatarMenuItem, styles.avatarMenuItemLogout]}
+              onPress={() => {
+                setAvatarMenuVisible(false);
+                setModalVisible(true);
+              }}
+            >
+              <Image
+                source={(icons.logouticon || icons.anonymous) as unknown as ImageSourcePropType}
+                style={[styles.avatarMenuIcon, { tintColor: '#FF3B30' }]}
+              />
+              <Text style={[styles.avatarMenuItemText, { color: '#FF3B30' }]}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -468,5 +547,68 @@ const styles = StyleSheet.create({
   modalButtonContainer: {
     width: "100%",
     paddingHorizontal: 15,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  avatarMenuContainer: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    minHeight: 300,
+  },
+  avatarMenuHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightOrange,
+    marginBottom: 16,
+  },
+  avatarMenuImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 12,
+  },
+  avatarMenuUserInfo: {
+    flex: 1,
+  },
+  avatarMenuName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.black,
+    marginBottom: 2,
+  },
+  avatarMenuUsername: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+  },
+  avatarMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  avatarMenuIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 12,
+    tintColor: COLORS.primary,
+  },
+  avatarMenuItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.black,
+  },
+  avatarMenuItemLogout: {
+    marginTop: 8,
+    backgroundColor: '#FFF5F5',
   },
 });

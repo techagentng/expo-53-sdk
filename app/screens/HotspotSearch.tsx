@@ -13,8 +13,10 @@ import StateLocal from "../components/StateLocal";
 import TextButton from "@/components/TextButton";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { useRouter } from "expo-router";
 
-const HotspotSearch = ({ navigation }: any) => {
+const HotspotSearch = () => {
+  const router = useRouter();
   const [reportType, setReportType] = useState("");
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedLocalGov, setSelectedLocalGov] = useState<string | null>(null);
@@ -66,7 +68,7 @@ const HotspotSearch = ({ navigation }: any) => {
     <View style={styles.container}>
       <View style={styles.topContainer}>
         <TouchableOpacity
-          onPress={() => navigation.navigate("MainScreen")}
+          onPress={() => router.back()}
           style={styles.goBackButton}
         >
           <Image
@@ -126,11 +128,14 @@ const HotspotSearch = ({ navigation }: any) => {
             fontSize: 17,
           }}
           onPress={() =>
-            navigation.navigate("SearchScreen", {
-              filteredData,
-              reportType,
-              selectedState,
-              selectedLocalGov
+            router.push({
+              pathname: "/screens/SearchScreen",
+              params: {
+                filteredData: JSON.stringify(filteredData),
+                reportType,
+                selectedState,
+                selectedLocalGov
+              }
             })
           }
         />

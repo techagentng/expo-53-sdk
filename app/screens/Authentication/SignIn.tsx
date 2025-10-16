@@ -45,19 +45,39 @@ const SignIn = () => {
     try {
       console.log('📡 Making API request to:', SIGNIN);
       console.log('📧 Login data:', { email, password: '***hidden***' });
+      console.log('🌐 Request config:', {
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
+      });
 
+      console.log('🔍 Testing network connectivity...');
+      try {
+        await axios.get('https://httpbin.org/get', { timeout: 5000 });
+        console.log('✅ Network connectivity test passed');
+      } catch (networkError) {
+        console.log('⚠️ Network connectivity test failed:', networkError instanceof Error ? networkError.message : String(networkError));
+      }
+
+      console.log('🔄 Sending request...');
       const response = await axios.post(SIGNIN, {
         email,
         password,
       }, {
-        timeout: 15000, // 15 second timeout
+        timeout: 30000,
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         }
+        // Note: Removed httpsAgent for React Native compatibility
+        // If SSL issues persist, we'll need a different approach
       });
 
       console.log('✅ API response received:', response.status);
       console.log('📦 Response data:', response.data);
+      console.log('🔍 Response headers:', response.headers);
 
       if (response.status === 200) {
         const { access_token, refresh_token } = response.data.data;
@@ -85,26 +105,32 @@ const SignIn = () => {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message,
-          code: error.code
+          code: error.code,
+          config: error.config,
+          request: error.request
         });
 
         if (error.code === 'ECONNABORTED') {
           console.log('⏱️ Request timeout detected');
           setErrorMessage("Request timed out. The server might be down or slow to respond.");
         } else if (error.response) {
-          // Handle the specific API error response structure
+          // Server responded with error status
           const message = error.response.data?.message ||
                          error.response.data?.errors ||
                          `Server error: ${error.response.status}`;
 
-          console.log('🚨 Setting error message:', message);
+          console.log('🚨 Server error response:', message);
+          console.log('🔍 Error response data:', error.response.data);
+          console.log('🔍 Error response status:', error.response.status);
           setErrorMessage(message);
         } else if (error.request) {
-          console.log('🌐 Network error detected');
+          console.log('🌐 Network error - request made but no response');
+          console.log('🔍 Request details:', error.request);
+          console.log('🔍 Error code:', error.code);
           setErrorMessage("Network error. Please check your internet connection and try again.");
         } else {
-          console.log('💥 Unexpected axios error');
-          setErrorMessage("An unexpected error occurred. Please try again.");
+          console.log('💥 Axios setup error:', error.message);
+          setErrorMessage("Request setup error. Please try again.");
         }
       } else {
         console.log('🚨 Non-axios error:', error);
