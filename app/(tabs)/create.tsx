@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -56,6 +56,23 @@ export default function CreateTab() {
     location: ''
   });
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('access_token');
+      setToken(accessToken);
+    } catch (e) {
+      console.log('Error checking auth:', e);
+    }
+  };
 
   const handleCategorySelect = (category: typeof REPORT_CATEGORIES[0]) => {
     if (category.name === 'Others') {
@@ -124,22 +141,90 @@ export default function CreateTab() {
     }
   };
 
-  const handleSubmitReport = () => {
-    // Simulate successful report submission
-    Alert.alert(
-      'Report Submitted',
-      'Your report has been successfully submitted!',
-      [
-        {
-          text: 'Add Media',
-          onPress: () => setShowMediaModal(true),
-        },
-        {
-          text: 'Continue',
-          style: 'cancel',
-        },
-      ]
-    );
+  const handleSubmitReport = async () => {
+    if (!token) {
+      Alert.alert(
+        'Authentication Required',
+        'Please login to create a report',
+        [
+          {
+            text: 'Login',
+            onPress: () => router.push('/screens/Login' as any),
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+      return;
+    }
+
+    if (!reportData.description.trim()) {
+      Alert.alert('Error', 'Please provide a description for your report.');
+      return;
+    }
+
+    setIsSubmittingReport(true);
+
+    try {
+      // Create FormData for the API call
+      const formData = new FormData();
+      formData.append('category', selectedCategory?.name || 'General');
+      formData.append('sub_report_type', selectedCategory?.name || 'General');
+      formData.append('description', reportData.description.trim());
+      formData.append('state_name', selectedState || '');
+      formData.append('lga_name', selectedLocalGov || '');
+      formData.append('is_anonymous', 'false');
+      formData.append('date_of_incidence', new Date().toISOString());
+
+      if (reportData.location.trim()) {
+        formData.append('landmark', reportData.location.trim());
+      }
+
+      // Dispatch the createReport action
+      const result = await dispatch(createReport({ formData, token }));
+
+      if (createReport.fulfilled.match(result)) {
+        // Success - show success modal and navigate to add media
+        Alert.alert(
+          'Report Submitted',
+          'Your report has been successfully submitted!',
+          [
+            {
+              text: 'Add Media',
+              onPress: () => setShowMediaModal(true),
+            },
+            {
+              text: 'Continue',
+              style: 'cancel',
+              onPress: () => router.replace('/(tabs)'),
+            },
+          ]
+        );
+
+        // Reset form
+        setReportData({ description: '', location: '' });
+        setSelectedState(null);
+        setSelectedLocalGov(null);
+        setShowReportForm(false);
+      } else if (createReport.rejected.match(result)) {
+        // Handle error
+        const errorPayload = result.payload as any;
+        Alert.alert(
+          'Submission Failed',
+          errorPayload?.message || 'Failed to submit report. Please try again.'
+        );
+      }
+    } catch (error) {
+      console.error('Report submission error:', error);
+      Alert.alert(
+        'Error',
+        'An unexpected error occurred. Please try again.'
+      );
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   const renderCategoryItem = ({ item }: { item: typeof REPORT_CATEGORIES[0] }) => (
@@ -195,10 +280,13 @@ export default function CreateTab() {
           />
 
           <TouchableOpacity
-            style={styles.submitButton}
+            style={[styles.submitButton, isSubmittingReport && styles.submitButtonDisabled]}
             onPress={handleSubmitReport}
+            disabled={isSubmittingReport}
           >
-            <Text style={styles.submitButtonText}>Submit Report</Text>
+            <Text style={styles.submitButtonText}>
+              {isSubmittingReport ? 'Submitting...' : 'Submit Report'}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -389,6 +477,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 24,
+  },
+  submitButtonDisabled: {
+    backgroundColor: COLORS.lightGray1,
+    opacity: 0.6,
   },
   submitButtonText: {
     color: '#fff',

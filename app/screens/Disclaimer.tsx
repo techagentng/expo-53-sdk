@@ -18,11 +18,13 @@ const Disclaimer = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.secondaryContainer}>
-        <Image
-          source={icons.citizenx}
-          resizeMode="contain"
-          style={styles.logo}
-        />
+        {icons.citizenx && (
+          <Image
+            source={icons.citizenx}
+            resizeMode="contain"
+            style={styles.logo}
+          />
+        )}
         <Text style={styles.title}>Citizen X</Text>
       </View>
       <View style={styles.textContainer}>
