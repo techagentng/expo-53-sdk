@@ -26,6 +26,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import axios from 'axios';
 import { MEDIA_UPLOAD } from '@/Redux/URL';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
 const REPORT_CATEGORIES = [
   { id: 1, name: 'Crime', icon: '🚔', color: '#FF6B6B' },
   { id: 2, name: 'Roads', icon: '🛣️', color: '#4ECDC4' },
@@ -82,6 +84,12 @@ export default function CreateTab() {
   const [reportId, setReportId] = useState<string | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
+
+  // Date/Time picker state
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [incidentDate, setIncidentDate] = useState<Date | null>(null);
+  const [incidentTime, setIncidentTime] = useState<Date | null>(null);
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -218,11 +226,11 @@ export default function CreateTab() {
       }
 
       if (categoryName === 'crime') {
-        if (crimeDate.trim()) {
-          formData.append('incident_date', crimeDate.trim());
+        if (incidentDate) {
+          formData.append('incident_date', incidentDate.toISOString().split('T')[0]);
         }
-        if (crimeTime.trim()) {
-          formData.append('incident_time', crimeTime.trim());
+        if (incidentTime) {
+          formData.append('incident_time', incidentTime.toTimeString().split(' ')[0]);
         }
         formData.append('emergency_response', emergencyResponse?.toString() || 'null');
       }
@@ -285,8 +293,8 @@ export default function CreateTab() {
         setCauseOfAccident('');
         setReportType('');
         setEmergencyResponse(null);
-        setCrimeDate('');
-        setCrimeTime('');
+        setIncidentDate(null);
+        setIncidentTime(null);
         setRating(0);
         setShowReportForm(false);
       } else if (createReport.rejected.match(result)) {
@@ -737,20 +745,24 @@ export default function CreateTab() {
         return (
           <View>
             <Text style={styles.label}>Incident Date</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Select date"
-              value={crimeDate}
-              onChangeText={setCrimeDate}
-            />
+            <TouchableOpacity
+              style={styles.dateTimeButton}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={styles.dateTimeButtonText}>
+                {incidentDate ? incidentDate.toLocaleDateString() : 'Select Date'}
+              </Text>
+            </TouchableOpacity>
 
             <Text style={styles.label}>Incident Time</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Select time"
-              value={crimeTime}
-              onChangeText={setCrimeTime}
-            />
+            <TouchableOpacity
+              style={styles.dateTimeButton}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <Text style={styles.dateTimeButtonText}>
+                {incidentTime ? incidentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Select Time'}
+              </Text>
+            </TouchableOpacity>
 
             <Text style={styles.label}>Emergency Response</Text>
             <View style={styles.checkboxContainer}>
@@ -774,6 +786,36 @@ export default function CreateTab() {
                 <Text style={styles.checkboxLabel}>No response</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Date Picker */}
+            {showDatePicker && (
+              <DateTimePicker
+                value={incidentDate || new Date()}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) {
+                    setIncidentDate(selectedDate);
+                  }
+                }}
+              />
+            )}
+
+            {/* Time Picker */}
+            {showTimePicker && (
+              <DateTimePicker
+                value={incidentTime || new Date()}
+                mode="time"
+                display="default"
+                onChange={(event, selectedTime) => {
+                  setShowTimePicker(false);
+                  if (selectedTime) {
+                    setIncidentTime(selectedTime);
+                  }
+                }}
+              />
+            )}
           </View>
         );
 
@@ -982,6 +1024,19 @@ const styles = StyleSheet.create({
   pickerPlaceholder: {
     fontSize: 16,
     color: COLORS.gray,
+  },
+  dateTimeButton: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGray1,
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#fff',
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  dateTimeButtonText: {
+    fontSize: 16,
+    color: COLORS.darkGray,
   },
   locationButton: {
     backgroundColor: COLORS.primary,
