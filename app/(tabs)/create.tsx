@@ -16,10 +16,16 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/Redux/store';
 import { createReport } from '@/Redux/authSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS } from '@/constants';
+import { COLORS, SIZES } from '@/constants';
 import { router } from 'expo-router';
 import StateLocal from '../components/StateLocal';
 import { NigeriaStates, LocalGovernment } from '../../data/state_local';
+import RNPickerSelect from 'react-native-picker-select';
+import { INCIDENT_TYPES } from '../../data/incidentTypes';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import axios from 'axios';
+import { MEDIA_UPLOAD } from '@/Redux/URL';
 const REPORT_CATEGORIES = [
   { id: 1, name: 'Crime', icon: '🚔', color: '#FF6B6B' },
   { id: 2, name: 'Roads', icon: '🛣️', color: '#4ECDC4' },
@@ -55,9 +61,27 @@ export default function CreateTab() {
     description: '',
     location: ''
   });
+  const [subReportType, setSubReportType] = useState<string>('');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
+  // Special fields for different categories
+  const [roadName, setRoadName] = useState<string>('');
+  const [outageLength, setOutageLength] = useState<string>('');
+  const [causeOfAccident, setCauseOfAccident] = useState<string>('');
+  const [reportType, setReportType] = useState<string>('');
+  const [emergencyResponse, setEmergencyResponse] = useState<boolean | null>(null);
+  const [crimeDate, setCrimeDate] = useState<string>('');
+  const [crimeTime, setCrimeTime] = useState<string>('');
+  const [rating, setRating] = useState<number>(0);
+
+  // Media upload state
+  const [albums, setAlbums] = useState<string[]>([]);
+  const [videoMedia, setVideoMedia] = useState<string[]>([]);
+  const [reportId, setReportId] = useState<string | null>(null);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -171,12 +195,54 @@ export default function CreateTab() {
       // Create FormData for the API call
       const formData = new FormData();
       formData.append('category', selectedCategory?.name || 'General');
-      formData.append('sub_report_type', selectedCategory?.name || 'General');
+      formData.append('sub_report_type', subReportType || selectedCategory?.name || 'General');
       formData.append('description', reportData.description.trim());
       formData.append('state_name', selectedState || '');
       formData.append('lga_name', selectedLocalGov || '');
       formData.append('is_anonymous', 'false');
       formData.append('date_of_incidence', new Date().toISOString());
+
+      // Add special fields based on category
+      const categoryName = selectedCategory?.name.toLowerCase();
+
+      if (categoryName === 'roads') {
+        formData.append('road_name', roadName.trim());
+        formData.append('road_rating', rating.toString());
+      }
+
+      if (categoryName === 'electricity' || categoryName === 'power') {
+        if (outageLength.trim()) {
+          formData.append('outage_length', outageLength.trim());
+        }
+        formData.append('power_rating', rating.toString());
+      }
+
+      if (categoryName === 'crime') {
+        if (crimeDate.trim()) {
+          formData.append('incident_date', crimeDate.trim());
+        }
+        if (crimeTime.trim()) {
+          formData.append('incident_time', crimeTime.trim());
+        }
+        formData.append('emergency_response', emergencyResponse?.toString() || 'null');
+      }
+
+      if (categoryName === 'health' || categoryName === 'healthcare') {
+        formData.append('healthcare_rating', rating.toString());
+      }
+
+      if (categoryName === 'emergency' || categoryName === 'accidents') {
+        if (causeOfAccident.trim()) {
+          formData.append('cause_of_incident', causeOfAccident.trim());
+        }
+        formData.append('emergency_response', emergencyResponse?.toString() || 'null');
+      }
+
+      if (categoryName === 'others') {
+        if (reportType.trim()) {
+          formData.append('report_type', reportType.trim());
+        }
+      }
 
       if (reportData.location.trim()) {
         formData.append('landmark', reportData.location.trim());
@@ -186,6 +252,12 @@ export default function CreateTab() {
       const result = await dispatch(createReport({ formData, token }));
 
       if (createReport.fulfilled.match(result)) {
+        // Store report ID for media upload
+        const reportResponse = result.payload as any;
+        if (reportResponse && reportResponse.reportID) {
+          setReportId(reportResponse.reportID);
+        }
+
         // Success - show success modal and navigate to add media
         Alert.alert(
           'Report Submitted',
@@ -207,6 +279,15 @@ export default function CreateTab() {
         setReportData({ description: '', location: '' });
         setSelectedState(null);
         setSelectedLocalGov(null);
+        setSubReportType('');
+        setRoadName('');
+        setOutageLength('');
+        setCauseOfAccident('');
+        setReportType('');
+        setEmergencyResponse(null);
+        setCrimeDate('');
+        setCrimeTime('');
+        setRating(0);
         setShowReportForm(false);
       } else if (createReport.rejected.match(result)) {
         // Handle error
@@ -258,6 +339,21 @@ export default function CreateTab() {
             onChangeText={(text) => setReportData({ ...reportData, description: text })}
           />
 
+          <Text style={styles.label}>Sub Report Type</Text>
+          <View style={styles.pickerContainer}>
+            <RNPickerSelect
+              placeholder={{ label: "Select type of incident", value: null }}
+              onValueChange={(value) => setSubReportType(value || '')}
+              items={selectedCategory ? INCIDENT_TYPES[selectedCategory.name.toLowerCase()] || [] : []}
+              value={subReportType}
+              style={{
+                inputIOS: styles.pickerInput,
+                inputAndroid: styles.pickerInput,
+                placeholder: styles.pickerPlaceholder,
+              }}
+            />
+          </View>
+
           <Text style={styles.label}>Location</Text>
           <TouchableOpacity
             style={styles.locationButton}
@@ -278,6 +374,8 @@ export default function CreateTab() {
             selectedLocalGov={selectedLocalGov}
             setSelectedLocalGov={setSelectedLocalGov}
           />
+
+          {renderSpecialFields()}
 
           <TouchableOpacity
             style={[styles.submitButton, isSubmittingReport && styles.submitButtonDisabled]}
@@ -305,12 +403,12 @@ export default function CreateTab() {
           </View>
 
           <View style={styles.mediaOptions}>
-            <TouchableOpacity style={styles.mediaOption}>
+            <TouchableOpacity style={styles.mediaOption} onPress={mediaAccess} disabled={imageLoading}>
               <Text style={styles.mediaIcon}>📷</Text>
               <Text style={styles.mediaText}>Upload Picture</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.mediaOption}>
+            <TouchableOpacity style={styles.mediaOption} onPress={videoAccess} disabled={imageLoading}>
               <Text style={styles.mediaIcon}>🎥</Text>
               <Text style={styles.mediaText}>Select Video</Text>
             </TouchableOpacity>
@@ -324,21 +422,438 @@ export default function CreateTab() {
             </TouchableOpacity>
           </View>
 
+          {/* Preview Selected Images */}
+          {albums.length > 0 && (
+            <View style={{ marginTop: 8 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 8 }}>
+                Selected Images:
+              </Text>
+              <FlatList
+                data={albums}
+                renderItem={({ item }) => (
+                  <Image
+                    source={{ uri: item }}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      marginRight: 10,
+                      borderRadius: SIZES.radius,
+                    }}
+                  />
+                )}
+                keyExtractor={(item, index) => index.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+              />
+            </View>
+          )}
+
+          {/* Preview Selected Videos */}
+          {videoMedia.length > 0 && (
+            <View style={{ marginTop: 8 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 8 }}>
+                Selected Videos:
+              </Text>
+              <FlatList
+                data={videoMedia}
+                renderItem={({ item }) => (
+                  <View style={{
+                    width: 80,
+                    height: 80,
+                    marginRight: 10,
+                    borderRadius: 10,
+                    backgroundColor: COLORS.lightGray2,
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  }}>
+                    <Text style={{ fontSize: 24 }}>🎥</Text>
+                  </View>
+                )}
+                keyExtractor={(item, index) => index.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+              />
+            </View>
+          )}
+
           <View style={styles.mediaModalFooter}>
             <TouchableOpacity
-              style={styles.continueButton}
+              style={[
+                styles.continueButton,
+                (isUploadingMedia || (!albums.length && !videoMedia.length)) && { opacity: 0.5 }
+              ]}
               onPress={() => {
-                setShowMediaModal(false);
-                router.replace('/(tabs)');
+                if (albums.length || videoMedia.length) {
+                  uploadMediaFile();
+                } else {
+                  setShowMediaModal(false);
+                  router.replace('/(tabs)');
+                }
               }}
+              disabled={isUploadingMedia}
             >
-              <Text style={styles.continueButtonText}>Continue without media</Text>
+              <Text style={styles.continueButtonText}>
+                {isUploadingMedia
+                  ? 'Uploading...'
+                  : albums.length || videoMedia.length
+                    ? 'Submit Media'
+                    : 'Continue without media'
+                }
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
     </Modal>
   );
+
+  const mediaAccess = async () => {
+    try {
+      setImageLoading(true);
+      let result = await ImagePicker.launchImageLibraryAsync({
+        quality: 1,
+        allowsMultipleSelection: true,
+      });
+
+      if (!result.canceled) {
+        const selectedImages = result.assets.map((asset) => asset.uri);
+        setAlbums(selectedImages);
+      } else {
+        Alert.alert('You did not select any images.');
+      }
+    } catch (error) {
+      Alert.alert('Error accessing media library', error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+      setImageLoading(false);
+    }
+  };
+
+  const videoAccess = async () => {
+    try {
+      setImageLoading(true);
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        quality: 1,
+        allowsMultipleSelection: true,
+      });
+
+      if (!result.canceled) {
+        const selectedVideos = result.assets;
+        const validVideos = [];
+
+        for (let video of selectedVideos) {
+          const videoInfo = await FileSystem.getInfoAsync(video.uri);
+          const fileSizeInMB = videoInfo.exists ? videoInfo.size / (1024 * 1024) : 0;
+
+          if (fileSizeInMB <= 100) {
+            validVideos.push(video.uri);
+          }
+        }
+
+        if (validVideos.length > 2) {
+          Alert.alert('Error', 'Please select at most 2 videos within 100 MB each.');
+          setImageLoading(false);
+          return;
+        }
+
+        setVideoMedia(validVideos);
+      } else {
+        Alert.alert('You did not select any videos.');
+      }
+    } catch (error) {
+      Alert.alert('Error accessing media library', error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+      setImageLoading(false);
+    }
+  };
+
+  const uploadMediaFile = async () => {
+    if (!reportId || (!albums.length && !videoMedia.length)) {
+      setShowMediaModal(false);
+      router.replace('/(tabs)');
+      return;
+    }
+
+    try {
+      setIsUploadingMedia(true);
+
+      const mediaFormData = new FormData();
+      mediaFormData.append('report_id', reportId);
+
+      // Process videos
+      if (videoMedia.length > 0) {
+        videoMedia.forEach((videoUri, index) => {
+          const fileType = videoUri.substring(videoUri.lastIndexOf('.') + 1).toLowerCase();
+          const allowedVideoTypes = ['mp4', 'mov', 'avi', 'mkv', 'webm'];
+          if (allowedVideoTypes.includes(fileType)) {
+            mediaFormData.append('mediaFiles', {
+              uri: videoUri,
+              type: `video/${fileType}`,
+              name: `video_${index}.${fileType}`,
+            } as any);
+          }
+        });
+      }
+
+      // Process images
+      if (albums.length > 0) {
+        albums.forEach((album, index) => {
+          const fileType = album.substring(album.lastIndexOf('.') + 1).toLowerCase();
+          let mediaType = ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(fileType) ? 'video' : 'image';
+
+          mediaFormData.append('mediaFiles', {
+            uri: album,
+            type: `${mediaType}/${fileType}`,
+            name: `media_${index}.${fileType}`,
+          } as any);
+        });
+      }
+
+      const mediaResponse = await axios.post(MEDIA_UPLOAD, mediaFormData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+        transformRequest: (data, headers) => data,
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+          console.log('Upload progress:', percentCompleted);
+        },
+      });
+
+      // Success - navigate to main screen
+      setAlbums([]);
+      setVideoMedia([]);
+      setReportId(null);
+      setShowMediaModal(false);
+      router.replace('/(tabs)');
+    } catch (error) {
+      console.error('Media upload error:', error);
+      handleMediaUploadError(error);
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const handleMediaUploadError = (error: any) => {
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        console.log('Media upload server error:', error.response.data);
+        if (error.response.status === 401) {
+          Alert.alert(
+            'Session Expired',
+            'Your session has expired. Please login again.',
+            [
+              {
+                text: 'Login',
+                onPress: () => router.push('/screens/Login' as any),
+              },
+            ]
+          );
+          return;
+        } else if (error.response.status === 500) {
+          Alert.alert('Error', 'Server error. Please try again later or contact support.');
+        } else {
+          Alert.alert('Upload Failed', error.response.data.message || 'There was an issue uploading media. Please try again later.');
+        }
+      } else if (error.request) {
+        console.log('Media upload network error:', error.message);
+        Alert.alert('Upload Failed', 'Network error. Please check your internet connection and try again.');
+      } else {
+        console.log('Media upload error:', error.message);
+        Alert.alert('Upload Failed', 'An unexpected error occurred. Please try again.');
+      }
+    } else {
+      console.log('Non-axios media upload error:', error);
+      Alert.alert('Upload Failed', 'An unexpected error occurred. Please try again.');
+    }
+  };
+
+  const renderSpecialFields = () => {
+    if (!selectedCategory) return null;
+
+    const categoryName = selectedCategory.name.toLowerCase();
+
+    switch (categoryName) {
+      case 'roads':
+        return (
+          <View>
+            <Text style={styles.label}>Road Name *</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter road name"
+              value={roadName}
+              onChangeText={setRoadName}
+            />
+
+            <Text style={styles.label}>Road Rating</Text>
+            <View style={styles.ratingContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setRating(star)}
+                  style={styles.starButton}
+                >
+                  <Text style={[styles.star, rating >= star && styles.starSelected]}>
+                    ★
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        );
+
+      case 'electricity':
+      case 'power':
+        return (
+          <View>
+            <Text style={styles.label}>Outage Duration (if applicable)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="e.g., 2 hours, 1 day"
+              value={outageLength}
+              onChangeText={setOutageLength}
+            />
+
+            <Text style={styles.label}>Power Supply Rating</Text>
+            <View style={styles.ratingContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setRating(star)}
+                  style={styles.starButton}
+                >
+                  <Text style={[styles.star, rating >= star && styles.starSelected]}>
+                    ★
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        );
+
+      case 'crime':
+        return (
+          <View>
+            <Text style={styles.label}>Incident Date</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Select date"
+              value={crimeDate}
+              onChangeText={setCrimeDate}
+            />
+
+            <Text style={styles.label}>Incident Time</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Select time"
+              value={crimeTime}
+              onChangeText={setCrimeTime}
+            />
+
+            <Text style={styles.label}>Emergency Response</Text>
+            <View style={styles.checkboxContainer}>
+              <TouchableOpacity
+                style={styles.checkboxOption}
+                onPress={() => setEmergencyResponse(true)}
+              >
+                <Text style={[styles.checkbox, emergencyResponse === true && styles.checkboxSelected]}>
+                  ☐
+                </Text>
+                <Text style={styles.checkboxLabel}>Yes, there was response</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.checkboxOption}
+                onPress={() => setEmergencyResponse(false)}
+              >
+                <Text style={[styles.checkbox, emergencyResponse === false && styles.checkboxSelected]}>
+                  ☐
+                </Text>
+                <Text style={styles.checkboxLabel}>No response</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        );
+
+      case 'health':
+      case 'healthcare':
+        return (
+          <View>
+            <Text style={styles.label}>Healthcare Experience Rating</Text>
+            <View style={styles.ratingContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setRating(star)}
+                  style={styles.starButton}
+                >
+                  <Text style={[styles.star, rating >= star && styles.starSelected]}>
+                    ★
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        );
+
+      case 'emergency':
+      case 'accidents':
+        return (
+          <View>
+            <Text style={styles.label}>Cause of Incident</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Describe what caused the incident"
+              value={causeOfAccident}
+              onChangeText={setCauseOfAccident}
+            />
+
+            <Text style={styles.label}>Emergency Response</Text>
+            <View style={styles.checkboxContainer}>
+              <TouchableOpacity
+                style={styles.checkboxOption}
+                onPress={() => setEmergencyResponse(true)}
+              >
+                <Text style={[styles.checkbox, emergencyResponse === true && styles.checkboxSelected]}>
+                  ☐
+                </Text>
+                <Text style={styles.checkboxLabel}>Yes, there was response</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.checkboxOption}
+                onPress={() => setEmergencyResponse(false)}
+              >
+                <Text style={[styles.checkbox, emergencyResponse === false && styles.checkboxSelected]}>
+                  ☐
+                </Text>
+                <Text style={styles.checkboxLabel}>No response</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        );
+
+      case 'others':
+        return (
+          <View>
+            <Text style={styles.label}>What are you reporting about?</Text>
+            <TextInput
+              style={[styles.textInput, styles.textArea]}
+              multiline
+              numberOfLines={3}
+              placeholder="Please describe what you're reporting about"
+              value={reportType}
+              onChangeText={setReportType}
+            />
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -451,6 +966,23 @@ const styles = StyleSheet.create({
     minHeight: 120,
     textAlignVertical: 'top',
   },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGray1,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    marginBottom: 16,
+  },
+  pickerInput: {
+    fontSize: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: COLORS.darkGray,
+  },
+  pickerPlaceholder: {
+    fontSize: 16,
+    color: COLORS.gray,
+  },
   locationButton: {
     backgroundColor: COLORS.primary,
     padding: 12,
@@ -470,6 +1002,41 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: COLORS.lightGray2,
     borderRadius: 4,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  starButton: {
+    padding: 4,
+  },
+  star: {
+    fontSize: 24,
+    color: COLORS.lightGray1,
+  },
+  starSelected: {
+    color: '#FFD700',
+  },
+  checkboxContainer: {
+    marginBottom: 16,
+  },
+  checkboxOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  checkbox: {
+    fontSize: 20,
+    marginRight: 12,
+    color: COLORS.lightGray1,
+  },
+  checkboxSelected: {
+    color: COLORS.primary,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: COLORS.darkGray,
   },
   submitButton: {
     backgroundColor: COLORS.primary,
