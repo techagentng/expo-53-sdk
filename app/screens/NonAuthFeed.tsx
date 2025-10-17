@@ -9,7 +9,7 @@ import {
   } from "react-native";
 import React, { useEffect } from "react";
 import { COLORS, icons, SIZES } from "@/constants";
-import DummyFeedData from "@/data/DummyFeedData";
+import { feeds as DummyFeedData } from "@/data/DummyFeedData";
 import Feed from "../components/Feed";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";

@@ -332,3 +332,5 @@ const feeds: Feed[] = [
     ],
   },
 ];
+
+export { feeds };

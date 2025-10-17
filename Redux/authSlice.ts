@@ -408,6 +408,12 @@ export const authSlice = createSlice({
     initializeBookmarks: (state, action) => {
       state.bookmarkedPosts = action.payload;
     },
+    // Add reducer to restore user from storage
+    setUserFromStorage: (state, action) => {
+      state.user = action.payload.user;
+      state.access_token = action.payload.access_token;
+      state.refresh_token = action.payload.refresh_token;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -526,27 +532,36 @@ export const authSlice = createSlice({
   },
 });
 
-// Add this function to initialize bookmarks when the app starts
-export const initializeBookmarks = () => async (dispatch: any) => {
+// Add this function to initialize authentication when the app starts
+export const initializeAuth = () => async (dispatch: any) => {
   try {
-    // First try to load from AsyncStorage
-    const storedBookmarks = await loadBookmarks();
-    
-    // Then fetch from server to ensure we have the latest state
-    const serverBookmarks = await fetchBookmarks();
-    
-    // Merge the two, with server state taking precedence
-    const mergedBookmarks = { ...storedBookmarks, ...serverBookmarks };
-    
-    // Save the merged state back to AsyncStorage
-    await saveBookmarks(mergedBookmarks);
-    
-    // Update Redux store
-    dispatch(authSlice.actions.initializeBookmarks(mergedBookmarks));
+    // Check if user has a valid session
+    const accessToken = await AsyncStorage.getItem('access_token');
+    const refreshToken = await AsyncStorage.getItem('refresh_token');
+    const userDetails = await AsyncStorage.getItem('user_details');
+
+    if (accessToken && userDetails) {
+      // Restore Redux state with existing session
+      const userData = JSON.parse(userDetails);
+      dispatch(authSlice.actions.setUserFromStorage({
+        user: userData,
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      }));
+
+      // Fetch fresh profile data to ensure it's up to date (don't block on this)
+      dispatch(profile_sec({ access_token: accessToken })).catch((error: any) => {
+        console.log('Failed to fetch fresh profile, using stored data');
+      });
+
+      console.log('Authentication state restored from storage');
+    } else {
+      console.log('No valid session found');
+    }
   } catch (error) {
-    console.log('Error initializing bookmarks:', error);
+    console.log('Error initializing auth:', error);
   }
 };
 
-export const { logout, resetUserStatus } = authSlice.actions;
+export const { logout, resetUserStatus, setUserFromStorage } = authSlice.actions;
 export default authSlice.reducer;

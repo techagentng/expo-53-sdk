@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { ImageSourcePropType } from "react-native";
 
 interface ContainerItem {
-  id: string;
+  id: string | number;
   title: string;
   image: ImageSourcePropType;
   navigation: string;

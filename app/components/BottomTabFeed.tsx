@@ -24,7 +24,7 @@ export default function BottomTabFeed() {
           tabBarIcon: ({ focused }) => (
             <View style={{ marginRight: 8 }}>
               <Text style={{ fontSize: 16, color: focused ? "#0E9C67" : "#666" }}>
-                👤
+                📋
               </Text>
             </View>
           ),

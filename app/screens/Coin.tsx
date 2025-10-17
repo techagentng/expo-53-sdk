@@ -113,7 +113,7 @@ const Coin = ({ navigation }: any) => {
         </View>
         <View style={{ marginLeft: 30 }}>
           <Text style={styles.pointNumber}>
-            {availableCoins?.total_balance}
+            {availableCoins?.total_balance || "0"}
           </Text>
           <Text style={styles.pointX}>X Point</Text>
         </View>

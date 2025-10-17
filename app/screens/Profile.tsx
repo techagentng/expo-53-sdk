@@ -100,7 +100,7 @@ const Profile = () => {
       dispatch(profile_sec({ access_token }));
       dispatch(rewardCount({ access_token }));
     }
-    console.log(availableCoins);
+    console.log('Profile: availableCoins after dispatch:', availableCoins);
   }, [dispatch, access_token]);
 
   useFocusEffect(
@@ -251,11 +251,11 @@ const Profile = () => {
                     fontWeight: "700",
                     fontSize: 14,
                     lineHeight: 20,
-                    color: COLORS.white,
+                    color: "black",
                     marginHorizontal: 8,
                   }}
                 >
-                  {availableCoins?.total_balance}
+                  {availableCoins?.total_balance || "0"}
                 </Text>
               </View>
               <View
@@ -311,7 +311,7 @@ const Profile = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => router.push("/screens/SettingsWrapper")}
+            onPress={() => router.push("/screens/Settings")}
           >
             <Image
               source={(icons.setting || icons.anonymous) as unknown as ImageSourcePropType}
@@ -377,7 +377,7 @@ const Profile = () => {
               style={styles.avatarMenuItem}
               onPress={() => {
                 setAvatarMenuVisible(false);
-                router.push("/screens/SettingsWrapper");
+                router.push("/screens/Settings");
               }}
             >
               <Image

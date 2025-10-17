@@ -1,4 +1,4 @@
-import { ReportCategory, ReportField, ReportData } from './BaseReportComponent';
+import { ReportCategory, ReportField, ReportData } from '../screens/ReportContainer/BaseReportComponent';
 
 // Category configurations
 export const REPORT_CATEGORIES: Record<string, ReportCategory> = {

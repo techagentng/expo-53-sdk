@@ -16,6 +16,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch } from "@/Redux/store";
 import { UPDATE_PROFILE_PICS, UPDATE_PROFILE } from "@/Redux/URL";
+import { StackNavigationProp } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ErrorImage from "@/components/loadingStates/ErrorImage";
 import TextButton from "@/components/TextButton";
@@ -25,16 +26,85 @@ import axios from "axios";
 import { profile_sec } from "@/Redux/authSlice";
 import StateLocal from "../components/StateLocal";
 import CustomActivityIndicator from "../components/CustomActivityIndicator";
+import { router } from "expo-router";
 
-import { StackNavigationProp } from "@react-navigation/stack";
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "white",
+    paddingTop: 20,
+    paddingHorizontal: 15,
+  },
+  topContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  editProfileText: {
+    fontWeight: "700",
+    color: COLORS.primary,
+    fontSize: 20,
+    textAlign: "center",
+    flex: 1,
+  },
+  profileImg: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  profileImageContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 30,
+  },
+  profileImageText: {
+    fontWeight: "700",
+    fontSize: 16,
+    color: COLORS.primary,
+    textAlign: "center",
+  },
+  errorStyle: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
 
-type EditProfileNavigationProp = StackNavigationProp<any>;
+  modalContainer: {
+    width: "98%",
+    height: 235,
+    backgroundColor: "white",
+    alignSelf: "center",
+    marginTop: "auto",
+    marginBottom: 7,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: COLORS.gray2,
+    paddingHorizontal: 8,
+  },
 
-interface EditProfileProps {
-  navigation: EditProfileNavigationProp;
-}
+  logoutTextContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 5,
+  },
+  primaryText: {
+    fontSize: 20,
+    fontWeight: "600",
+    lineHeight: 25,
+  },
+  secondaryText: {
+    fontSize: 15,
+    fontWeight: "400",
+    lineHeight: 20,
+    textAlign: "center",
+    marginVertical: 10,
+  },
+});
 
-const EditProfile = ({ navigation }: EditProfileProps) => {
+const EditProfile = () => {
   const [state, setState] = useState<string | null>("");
   const [localGov, setLocalGov] = useState<string | null>("");
   const [fullName, setFullName] = useState("");
@@ -53,7 +123,7 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
   //const [successModal, setSuccessModal] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<{ response?: any; request?: any; message?: string } | null>(null);
 
   const { user } = useSelector((state: any) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
@@ -112,8 +182,11 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
   }, [profileImag]);
 
   useEffect(() => {
-    dispatch(profile_sec({ access_token: token || "" }));
-  }, [fullName, localGov, state]);
+    // Only fetch profile if we have a token and user data has changed
+    if (token && user && (fullName || UserName || state || localGov)) {
+      dispatch(profile_sec({ access_token: token }));
+    }
+  }, [dispatch, token, user, fullName, UserName, state, localGov]);
 
   async function updateProfile() {
     try {
@@ -147,7 +220,8 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
       return response.data;
     } catch (error) {
       setLoading(false);
-      setError(error);
+      const errorObj = error as { response?: any; request?: any; message?: string };
+      setError(errorObj || null);
       if (error && typeof error === 'object' && 'response' in error) {
         console.log("server error:", (error as any).response?.data);
         setErrorMessage(
@@ -187,7 +261,9 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
         if (response.status === 200) {
           Alert.alert("Success", "Profile image updated successfully");
           setImageLoading(false);
-          dispatch(profile_sec({ access_token: token || "" }));
+          if (token) {
+            dispatch(profile_sec({ access_token: token }));
+          }
           //dispatch(profile_sec());
           setUpdateSuccess(true);
         }
@@ -230,7 +306,7 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
 
   if (loading) return <LoadingImage />;
 
-  if (error.response) {
+  if (error && error.response) {
     return (
       <View style={styles.errorStyle}>
         <ErrorImage />
@@ -254,13 +330,13 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
               fontSize: 18,
             }}
             onPress={() => {
-              navigation.goBack();
+              router.back();
             }}
           />
         </View>
       </View>
     );
-  } else if (error.request) {
+  } else if (error && error.request) {
     return (
       <View style={styles.errorStyle}>
         <NetworkError />
@@ -284,7 +360,7 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
               fontSize: 18,
             }}
             onPress={() => {
-              navigation.goBack();
+              router.back();
             }}
           />
         </View>
@@ -314,7 +390,7 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
               fontSize: 18,
             }}
             onPress={() => {
-              navigation.goBack();
+              router.back();
             }}
           />
         </View>
@@ -325,7 +401,7 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
   return (
     <View style={styles.container}>
       <View style={styles.topContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => router.back()}>
           {icons.arrowleft ? (
             <Image
               source={icons.arrowleft}
@@ -365,7 +441,7 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
             />
           )}
         </TouchableOpacity>
-        <Text style={styles.profileImageText}>Change Profile Photo</Text>
+        <Text style={[styles.profileImageText, { marginTop: 15 }]}>Change Profile Photo</Text>
       </View>
 
       <ScrollView>
@@ -519,11 +595,10 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
             }}
             onPress={() => {
               setUpdateSuccess(false);
-              dispatch(profile_sec({ access_token: token || "" }));
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "MainScreen" }],
-              });
+              if (token) {
+                dispatch(profile_sec({ access_token: token }));
+              }
+              router.replace('/(tabs)');
             }}
           />
         </View>
@@ -533,78 +608,3 @@ const EditProfile = ({ navigation }: EditProfileProps) => {
 };
 
 export default EditProfile;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "white",
-    paddingTop: 20,
-    paddingHorizontal: 15,
-  },
-  topContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  editProfileText: {
-    fontWeight: "700",
-    color: COLORS.primary,
-    fontSize: 20,
-    marginLeft: 100,
-  },
-  profileImg: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  profileImageContainer: {
-    alignItems: "center",
-    justifyContent: "flex-start",
-    flexDirection: "row",
-  },
-  profileImageText: {
-    marginLeft: 35,
-    fontWeight: "700",
-    fontSize: 16,
-    color: COLORS.primary,
-  },
-  errorStyle: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-  },
-
-  modalContainer: {
-    width: "98%",
-    height: 235,
-    backgroundColor: "white",
-    alignSelf: "center",
-    marginTop: "auto",
-    marginBottom: 7,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: COLORS.gray2,
-    paddingHorizontal: 8,
-  },
-
-  logoutTextContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 5,
-  },
-  primaryText: {
-    fontSize: 20,
-    fontWeight: "600",
-    lineHeight: 25,
-  },
-  secondaryText: {
-    fontSize: 15,
-    fontWeight: "400",
-    lineHeight: 20,
-    textAlign: "center",
-    marginVertical: 10,
-  },
-});

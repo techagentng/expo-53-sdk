@@ -197,13 +197,18 @@ export default function CreateTab() {
       return;
     }
 
+    if (!selectedCategory) {
+      Alert.alert('Error', 'Please select a report category.');
+      return;
+    }
+
     setIsSubmittingReport(true);
 
     try {
       // Create FormData for the API call
       const formData = new FormData();
-      formData.append('category', selectedCategory?.name || 'General');
-      formData.append('sub_report_type', subReportType || selectedCategory?.name || 'General');
+      formData.append('category', selectedCategory.name);
+      formData.append('sub_report_type', subReportType || selectedCategory.name);
       formData.append('description', reportData.description.trim());
       formData.append('state_name', selectedState || '');
       formData.append('lga_name', selectedLocalGov || '');
@@ -211,18 +216,24 @@ export default function CreateTab() {
       formData.append('date_of_incidence', new Date().toISOString());
 
       // Add special fields based on category
-      const categoryName = selectedCategory?.name.toLowerCase();
+      const categoryName = selectedCategory.name.toLowerCase();
 
       if (categoryName === 'roads') {
-        formData.append('road_name', roadName.trim());
-        formData.append('road_rating', rating.toString());
+        if (roadName.trim()) {
+          formData.append('road_name', roadName.trim());
+        }
+        if (rating > 0) {
+          formData.append('road_rating', rating.toString());
+        }
       }
 
       if (categoryName === 'electricity' || categoryName === 'power') {
         if (outageLength.trim()) {
           formData.append('outage_length', outageLength.trim());
         }
-        formData.append('power_rating', rating.toString());
+        if (rating > 0) {
+          formData.append('power_rating', rating.toString());
+        }
       }
 
       if (categoryName === 'crime') {
@@ -232,18 +243,24 @@ export default function CreateTab() {
         if (incidentTime) {
           formData.append('incident_time', incidentTime.toTimeString().split(' ')[0]);
         }
-        formData.append('emergency_response', emergencyResponse?.toString() || 'null');
+        if (emergencyResponse !== null) {
+          formData.append('emergency_response', emergencyResponse.toString());
+        }
       }
 
       if (categoryName === 'health' || categoryName === 'healthcare') {
-        formData.append('healthcare_rating', rating.toString());
+        if (rating > 0) {
+          formData.append('healthcare_rating', rating.toString());
+        }
       }
 
       if (categoryName === 'emergency' || categoryName === 'accidents') {
         if (causeOfAccident.trim()) {
           formData.append('cause_of_incident', causeOfAccident.trim());
         }
-        formData.append('emergency_response', emergencyResponse?.toString() || 'null');
+        if (emergencyResponse !== null) {
+          formData.append('emergency_response', emergencyResponse.toString());
+        }
       }
 
       if (categoryName === 'others') {
@@ -255,6 +272,8 @@ export default function CreateTab() {
       if (reportData.location.trim()) {
         formData.append('landmark', reportData.location.trim());
       }
+
+      console.log('FormData contents:', formData);
 
       // Dispatch the createReport action
       const result = await dispatch(createReport({ formData, token }));
