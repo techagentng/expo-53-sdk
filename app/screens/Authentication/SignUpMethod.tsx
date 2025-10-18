@@ -23,16 +23,14 @@ import * as Google from "expo-auth-session/providers/google";
 import axios from "axios";
 import { LOGIN_WITH_GOOGLE } from "@/Redux/URL";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 
 const { width, height } = Dimensions.get("window");
 
 WebBrowser.maybeCompleteAuthSession();
 
-interface SignUpMethodProps {
-  navigation: any;
-}
-
-const SignUpMethod: React.FC<SignUpMethodProps> = ({ navigation }) => {
+const SignUpMethod = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
 
@@ -56,7 +54,7 @@ const SignUpMethod: React.FC<SignUpMethodProps> = ({ navigation }) => {
       await AsyncStorage.setItem("access_token", access_token);
       await AsyncStorage.setItem("refresh_token", refresh_token);
 
-      navigation.navigate("MainScreen");
+      router.replace("/MainScreen");
     } catch (error) {
       console.error("Google login error:", error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
@@ -80,7 +78,7 @@ const SignUpMethod: React.FC<SignUpMethodProps> = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.navigate("InitialSignUp")}
+          onPress={() => router.back()}
           style={styles.backButton}
         >
           <Text style={{ fontSize: 20, color: "black" }}>←</Text>
@@ -96,7 +94,7 @@ const SignUpMethod: React.FC<SignUpMethodProps> = ({ navigation }) => {
           disabled={loading}
           buttonContainerStyle={styles.emailButton}
           labelStyle={styles.buttonLabel}
-          onPress={() => navigation.navigate("InitialSignUp")}
+          onPress={() => router.push("/screens/Authentication/SignUp" as any)}
         />
         <View style={styles.divider}>
           <View style={styles.line} />
@@ -250,7 +248,7 @@ const SignUpMethod: React.FC<SignUpMethodProps> = ({ navigation }) => {
             fontWeight: "700",
             fontSize: 18,
           }}
-          onPress={() => navigation.navigate("SignIn")}
+          onPress={() => router.push("/screens/Authentication/SignIn" as any)}
         />
       </View>
     </SafeAreaView>

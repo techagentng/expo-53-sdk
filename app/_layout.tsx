@@ -10,9 +10,10 @@ import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider, useDispatch } from 'react-redux';
 import ErrorBoundary from './components/ErrorBoundary';
+import { AuthProvider } from '../provider/AuthContext';
 
 // Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync();
+// SplashScreen.preventAutoHideAsync(); // Remove this - plugin handles it
 
 // Create an AppInitializer component that uses Redux
 function AppInitializer({ onInitialized }: { onInitialized: (isAuthenticated: boolean) => void }) {
@@ -23,50 +24,40 @@ function AppInitializer({ onInitialized }: { onInitialized: (isAuthenticated: bo
       try {
         console.log('🚀 Starting app initialization...');
 
-        // Simple AsyncStorage check first
-        const accessToken = await AsyncStorage.getItem('access_token');
-        const userDetails = await AsyncStorage.getItem('user_details');
+        // Initialize Redux state with stored authentication data
+        await dispatch(initializeAuth() as any);
 
-        if (accessToken && userDetails) {
-          console.log('📱 Found stored credentials, initializing Redux...');
+        // Wait a bit for Redux state to update
+        setTimeout(() => {
+          try {
+            const state = store.getState();
+            const hasUser = !!state.auth?.user;
+            const hasToken = !!state.auth?.access_token;
 
-          // Initialize Redux state with stored data
-          await dispatch(initializeAuth() as any);
+            console.log(`🔍 Redux state check: User=${hasUser}, Token=${hasToken}`);
+            console.log('User data:', state.auth?.user);
 
-          // Quick state check
-          setTimeout(() => {
-            try {
-              const state = store.getState();
-              const hasUser = !!state.auth?.user;
-              const hasToken = !!state.auth?.access_token;
-
-              console.log(`🔍 Redux state: User=${hasUser}, Token=${hasToken}`);
-
-              if (hasUser && hasToken) {
-                console.log('✅ User is authenticated');
-                onInitialized(true);
-              } else {
-                console.log('⚠️ Stored credentials found but Redux state incomplete');
-                onInitialized(false);
-              }
-            } catch (error) {
-              console.error('❌ Redux state access error:', error);
+            if (hasUser && hasToken) {
+              console.log('✅ User is authenticated');
+              onInitialized(true);
+            } else {
+              console.log('❌ No valid authentication found');
               onInitialized(false);
             }
-          }, 500);
-        } else {
-          console.log('📱 No stored credentials found');
-          onInitialized(false);
-        }
+          } catch (error) {
+            console.error('❌ Redux state access error:', error);
+            onInitialized(false);
+          }
+        }, 1000); // Give more time for Redux to update
+
       } catch (error) {
         console.error('❌ App initialization error:', error);
         onInitialized(false);
       }
     };
 
-    // Start initialization after a short delay to ensure everything is loaded
-    const timer = setTimeout(initializeApp, 100);
-    return () => clearTimeout(timer);
+    // Start initialization immediately
+    initializeApp();
   }, [dispatch, onInitialized]);
 
   return null;
@@ -102,9 +93,9 @@ export default function RootLayout() {
       // Clear any existing navigation state
       AsyncStorage.removeItem('navigationState').catch(console.warn);
 
-      // Hide splash screen and mark as ready
+      // Hide splash screen and mark as ready - Plugin handles this automatically
+      // SplashScreen.hideAsync().catch(console.warn); // Remove this - plugin handles it
       setIsReady(true);
-      SplashScreen.hideAsync().catch(console.warn);
     }
   }, [isAuthenticated, isReady, initTimeout]);
 
@@ -120,39 +111,41 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <Provider store={store}>
-          <AppInitializer onInitialized={setIsAuthenticated} />
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen
-                name="onboarding"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen name="Disclaimer" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="ComplainSuccess" />
-              <Stack.Screen name="screens/InitialSignUp" />
-              <Stack.Screen name="MainScreen" />
-              <Stack.Screen name="screens/Authentication/SignUp" />
-              <Stack.Screen name="screens/Authentication/SignIn" />
-              <Stack.Screen name="screens/Authentication/UserName" />
-              <Stack.Screen name="screens/Authentication/ProfilePics" />
-              <Stack.Screen name="screens/Authentication/EmailSuccess" />
-              <Stack.Screen name="screens/Authentication/Interest" />
-              <Stack.Screen name="screens/Authentication/SignUpMethod" />
-              <Stack.Screen name="screens/Authentication/Otp" />
-              <Stack.Screen name="screens/Authentication/ForgetPassword" />
-              <Stack.Screen name="screens/Authentication/SignUpSuccess" />
-              <Stack.Screen name="screens/HotspotSearch" />
-              <Stack.Screen name="screens/SettingsWrapper" />
-              <Stack.Screen name="screens/Settings" />
-              <Stack.Screen name="screens/DataSaver" />
-              <Stack.Screen name="screens/ReportContainer/MakeReport" />
-              <Stack.Screen name="screens/AudioRecordScreen" />
-            </Stack>
-          </ThemeProvider>
+          <AuthProvider>
+            <AppInitializer onInitialized={setIsAuthenticated} />
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen
+                  name="onboarding"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen name="Disclaimer" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="ComplainSuccess" />
+                <Stack.Screen name="screens/InitialSignUp" />
+                <Stack.Screen name="MainScreen" />
+                <Stack.Screen name="screens/Authentication/SignUp" />
+                <Stack.Screen name="screens/Authentication/SignIn" />
+                <Stack.Screen name="screens/Authentication/UserName" />
+                <Stack.Screen name="screens/Authentication/ProfilePics" />
+                <Stack.Screen name="screens/Authentication/EmailSuccess" />
+                <Stack.Screen name="screens/Authentication/Interest" />
+                <Stack.Screen name="screens/Authentication/SignUpMethod" />
+                <Stack.Screen name="screens/Authentication/Otp" />
+                <Stack.Screen name="screens/Authentication/ForgetPassword" />
+                <Stack.Screen name="screens/Authentication/SignUpSuccess" />
+                <Stack.Screen name="screens/HotspotSearch" />
+                <Stack.Screen name="screens/SettingsWrapper" />
+                <Stack.Screen name="screens/Settings" />
+                <Stack.Screen name="screens/DataSaver" />
+                <Stack.Screen name="screens/ReportContainer/MakeReport" />
+                <Stack.Screen name="screens/AudioRecordScreen" />
+              </Stack>
+            </ThemeProvider>
+          </AuthProvider>
         </Provider>
       </ErrorBoundary>
     </SafeAreaProvider>

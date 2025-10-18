@@ -48,6 +48,20 @@ const Profile = () => {
     (state: RootState) => state.auth
   );
 
+  // Debug Redux state
+  useEffect(() => {
+    console.log('🔍 Profile Redux state:', {
+      hasUser: !!user,
+      userKeys: user ? Object.keys(user) : [],
+      hasName: user?.name,
+      hasFullname: user?.fullname,
+      hasUsername: user?.username,
+      hasToken: !!access_token,
+      loading,
+      error
+    });
+  }, [user, access_token, loading, error]);
+
   const handleRefresh = () => {
     if (access_token) {
       dispatch(profile_sec({ access_token }));
@@ -97,8 +111,11 @@ const Profile = () => {
 
   useEffect(() => {
     if (access_token) {
+      console.log('🔄 Profile: Fetching fresh data with token:', access_token);
       dispatch(profile_sec({ access_token }));
       dispatch(rewardCount({ access_token }));
+    } else {
+      console.log('⚠️ Profile: No access token available');
     }
     console.log('Profile: availableCoins after dispatch:', availableCoins);
   }, [dispatch, access_token]);
@@ -184,8 +201,8 @@ const Profile = () => {
       </View>
     );
   }
-  // Defensive: If user is missing, show fallback UI
-  if (!user || !user.name) {
+  // Defensive: If user is missing or has no identifying info, show fallback UI
+  if (!user || (!user.name && !user.fullname && !user.username)) {
     console.log('Profile: no user data', user);
     return (
       <View style={styles.container}>
@@ -201,6 +218,16 @@ const Profile = () => {
       </View>
     );
   }
+
+  // Helper function to get user display name
+  const getDisplayName = () => {
+    return user?.name || user?.fullname || user?.username || 'User';
+  };
+
+  // Helper function to get username
+  const getUsername = () => {
+    return user?.username || user?.name || '';
+  };
 
   return (
     <View style={styles.container}>
@@ -221,8 +248,8 @@ const Profile = () => {
             />
           </TouchableOpacity>
           <View style={styles.profileNameContainer}>
-            <Text style={styles.fullName}>{user?.name}</Text>
-            <Text style={styles.userName}>@{user?.username}</Text>
+            <Text style={styles.fullName}>{getDisplayName()}</Text>
+            <Text style={styles.userName}>@{getUsername()}</Text>
           </View>
 
           <TouchableOpacity onPress={() => router.push("/screens/Coin")}>
@@ -340,8 +367,8 @@ const Profile = () => {
                 style={styles.avatarMenuImage}
               />
               <View style={styles.avatarMenuUserInfo}>
-                <Text style={styles.avatarMenuName}>{user?.name}</Text>
-                <Text style={styles.avatarMenuUsername}>@{user?.username}</Text>
+                <Text style={styles.avatarMenuName}>{getDisplayName()}</Text>
+                <Text style={styles.avatarMenuUsername}>@{getUsername()}</Text>
               </View>
             </View>
 
