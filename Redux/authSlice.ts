@@ -101,7 +101,7 @@ const signup = createAsyncThunk(
     try {
       const formData = new FormData();
       formData.append("fullname", fullname);
-      formData.append("telephone", phoneNumber);  // Changed from phoneNumber to telephone
+      formData.append("telephone", phoneNumber);
       formData.append("username", username);
       formData.append("email", email);
       formData.append("password", password);
@@ -116,7 +116,6 @@ const signup = createAsyncThunk(
         } as any);
       }
 
-      console.log("Form Data before sending to server:", formData);
       const response = await axios.post(SIGNUP, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -130,11 +129,9 @@ const signup = createAsyncThunk(
         email,
         profileImage,
       };
-      console.log("Signup response data:", response.data);
       await AsyncStorage.setItem("user_details", JSON.stringify(userDetails));
       return response.data;
     } catch (error) {
-      console.log("Signup error response data:", (error as any)?.response?.data);
       if (axios.isAxiosError(error)) {
         const payload = error.response?.data || error.message || "Unknown error";
         return rejectWithValue(payload);
@@ -243,14 +240,11 @@ const profile_sec = createAsyncThunk(
   "auth/profile_sec",
   async ({ access_token }: { access_token?: string }, { rejectWithValue }) => {
     try {
-      console.log('Fetching profile with token:', access_token);
       const response = await axios.get(PROFILE, {
         headers: {
           Authorization: `Bearer ${access_token}`,
         },
       });
-
-      console.log('Profile response:', response.data);
 
       if (response.data.data) {
         await AsyncStorage.setItem("user_details", JSON.stringify(response.data.data));
@@ -285,6 +279,30 @@ const rewardCount = createAsyncThunk(
         return rejectWithValue(payload);
       }
       const message = error instanceof Error ? error.message : "Unknown error";
+      return rejectWithValue(message);
+    }
+  }
+);
+
+const createReport = createAsyncThunk(
+  "auth/createReport",
+  async ({ formData, token }: { formData: FormData, token: string }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(CREATE_REPORT, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+        transformRequest: (data, headers) => data, // Don't transform FormData
+      });
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const payload = error.response?.data || error.message || "Failed to create report";
+        return rejectWithValue(payload);
+      }
+      const message = error instanceof Error ? error.message : "Failed to create report";
       return rejectWithValue(message);
     }
   }
@@ -330,7 +348,6 @@ export const authSlice = createSlice({
       .addCase(signup.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.data;
-        // Note: Old implementation doesn't expect tokens in signup response
         state.status = action.payload.status;
       })
       .addCase(signup.rejected, (state, action) => {
@@ -381,7 +398,6 @@ export const authSlice = createSlice({
       })
       .addCase(profile_sec.fulfilled, (state, action) => {
         state.loading = false;
-        console.log('Setting user in Redux from profile:', action.payload);
         state.user = action.payload;
         state.error = null;
       })
@@ -389,7 +405,6 @@ export const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         state.user = null;
-        console.log('Profile fetch failed:', action.payload);
       })
       .addCase(rewardCount.pending, (state) => {
         state.loading = true;
@@ -403,64 +418,58 @@ export const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      .addCase(createReport.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createReport.fulfilled, (state, action) => {
+        state.loading = false;
+        state.report = action.payload;
+        state.error = null;
+      })
+      .addCase(createReport.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   },
 });
 
 // Initialize authentication function
 export const initializeAuth = () => async (dispatch: any) => {
   try {
-    console.log('🔄 Initializing authentication...');
-
-    // Check if user has a valid session
     const accessToken = await AsyncStorage.getItem('access_token');
     const refreshToken = await AsyncStorage.getItem('refresh_token');
     const userDetails = await AsyncStorage.getItem('user_details');
 
-    console.log('📱 Stored data check:', {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-      hasUserDetails: !!userDetails
-    });
-
     if (accessToken && userDetails) {
       try {
-        // Parse user data
         const userData = JSON.parse(userDetails);
 
-        // Validate user data structure
         if (userData && (userData.name || userData.fullname || userData.username)) {
-          // Restore Redux state with existing session
           dispatch(authSlice.actions.setUserFromStorage({
             user: userData,
             access_token: accessToken,
             refresh_token: refreshToken || "",
           }));
 
-          console.log('✅ Authentication state restored successfully');
-          console.log('User data restored:', userData);
-
-          // Fetch fresh profile data to ensure it's up to date (don't block on this)
           dispatch(profile_sec({ access_token: accessToken })).catch((error: any) => {
-            console.log('⚠️ Failed to fetch fresh profile, using stored data');
+            console.log('Failed to fetch fresh profile, using stored data');
           });
 
           return true;
-        } else {
-          console.log('⚠️ Invalid user data structure');
         }
       } catch (parseError) {
-        console.log('❌ Error parsing stored user data:', parseError);
+        console.log('Error parsing stored user data:', parseError);
       }
     }
 
-    console.log('❌ No valid session found or invalid data');
     return false;
   } catch (error) {
-    console.log('❌ Error initializing auth:', error);
+    console.log('Error initializing auth:', error);
     return false;
   }
 };
 
 export const { logout, resetUserStatus, setUserFromStorage, initializeBookmarks } = authSlice.actions;
-export { signup, login, googleLogin, profile_sec, rewardCount };
+export { signup, login, googleLogin, profile_sec, rewardCount, createReport };
 export default authSlice.reducer;
