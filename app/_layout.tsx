@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider, useDispatch } from 'react-redux';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from '../provider/AuthContext';
+import Disclaimer from './Disclaimer';
 
 // Keep the splash screen visible while we fetch resources
 // SplashScreen.preventAutoHideAsync(); // Remove this - plugin handles it
@@ -102,6 +103,23 @@ export default function RootLayout() {
   // Show loading screen while initializing (with timeout fallback)
   if (!isReady || !initialRoute) {
     console.log('⏳ Showing loading screen:', { isReady, initialRoute, initTimeout });
+
+    // Show disclaimer screen during initialization instead of blank screen
+    if (!isReady && !initTimeout) {
+      return (
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <Provider store={store}>
+              <AuthProvider>
+                <Disclaimer isLoading={true} />
+              </AuthProvider>
+            </Provider>
+          </ErrorBoundary>
+        </SafeAreaProvider>
+      );
+    }
+
+    // Fallback to null if timeout reached
     return null;
   }
 

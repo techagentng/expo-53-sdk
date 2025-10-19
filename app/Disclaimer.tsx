@@ -35,17 +35,31 @@ const TextButton: React.FC<{
   onPress: () => void;
   buttonContainerStyle?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
-}> = ({ label, onPress, buttonContainerStyle, labelStyle }) => (
+  disabled?: boolean;
+}> = ({ label, onPress, buttonContainerStyle, labelStyle, disabled = false }) => (
   <TouchableOpacity
-    style={[styles.buttonContainer, buttonContainerStyle]}
-    onPress={onPress}
+    style={[styles.buttonContainer, buttonContainerStyle, disabled && { opacity: 0.6 }]}
+    onPress={disabled ? undefined : onPress}
+    disabled={disabled}
   >
     <Text style={[styles.buttonLabel, labelStyle]}>{label}</Text>
   </TouchableOpacity>
 );
 
-const Disclaimer = () => {
+const Disclaimer = ({ isLoading = false }: { isLoading?: boolean } = {}) => {
   const router = useRouter();
+
+  const handleGetStarted = async () => {
+    if (isLoading) return; // Don't allow interaction during loading
+
+    try {
+      await AsyncStorage.setItem('disclaimerAccepted', 'true');
+      // @ts-ignore - expo-router types are not fully compatible yet
+      router.replace('/onboarding');
+    } catch (error) {
+      console.error('Failed to save disclaimer status:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -72,18 +86,17 @@ const Disclaimer = () => {
         </View>
 
         <TextButton
-          label="Get Started"
-          buttonContainerStyle={styles.buttonContainer}
-          labelStyle={styles.buttonLabel}
-          onPress={async () => {
-            try {
-              await AsyncStorage.setItem('disclaimerAccepted', 'true');
-              // @ts-ignore - expo-router types are not fully compatible yet
-              router.replace('/onboarding');
-            } catch (error) {
-              console.error('Failed to save disclaimer status:', error);
-            }
-          }}
+          label={isLoading ? "Loading..." : "Get Started"}
+          buttonContainerStyle={[
+            styles.buttonContainer,
+            isLoading && { opacity: 0.6 }
+          ]}
+          labelStyle={[
+            styles.buttonLabel,
+            isLoading && { opacity: 0.6 }
+          ]}
+          onPress={handleGetStarted}
+          disabled={isLoading}
         />
       </View>
 
@@ -95,8 +108,12 @@ const Disclaimer = () => {
             onPress={() =>
               Linking.openURL("https://www.citizenx.ng/disclaimer")
             }
+            disabled={isLoading}
           >
-            <Text style={styles.linkText}>
+            <Text style={[
+              styles.linkText,
+              isLoading && { opacity: 0.6 }
+            ]}>
               www.citizenx.ng/disclaimer
             </Text>
           </TouchableOpacity>

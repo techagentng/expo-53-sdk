@@ -9,12 +9,25 @@ import {
   SafeAreaView,
 } from "react-native";
 import React from "react";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { icons, SIZES, COLORS } from "@/constants";
 import TextButton from "../components/TextButton";
 
 const { width, height } = Dimensions.get("window");
 
-const Disclaimer = ({ navigation }: any) => {
+const Disclaimer = () => {
+  const router = useRouter();
+
+  const handleGetStarted = async () => {
+    try {
+      await AsyncStorage.setItem('disclaimerAccepted', 'true');
+      router.replace('/onboarding');
+    } catch (error) {
+      console.error('Failed to save disclaimer status:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.secondaryContainer}>
@@ -44,9 +57,7 @@ const Disclaimer = ({ navigation }: any) => {
         label="Get Started"
         buttonContainerStyle={styles.buttonContainer}
         labelStyle={styles.buttonLabel}
-        onPress={() => {
-          navigation.navigate("SplashScreen");
-        }}
+        onPress={handleGetStarted}
       />
 
       <View style={styles.footer}>

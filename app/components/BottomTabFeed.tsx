@@ -17,20 +17,6 @@ export default function BottomTabFeed() {
       }}
     >
       <Tab.Screen
-        name="User Posts"
-        component={UserPost}
-        options={{
-          tabBarLabel: 'My Posts',
-          tabBarIcon: ({ focused }) => (
-            <View style={{ marginRight: 8 }}>
-              <Text style={{ fontSize: 16, color: focused ? "#0E9C67" : "#666" }}>
-                📋
-              </Text>
-            </View>
-          ),
-        }}
-      />
-      <Tab.Screen
         name="Bookmarked"
         component={BookMark}
         options={{
@@ -39,6 +25,20 @@ export default function BottomTabFeed() {
             <View style={{ marginRight: 8 }}>
               <Text style={{ fontSize: 16, color: focused ? "#0E9C67" : "#666" }}>
                 ⭐
+              </Text>
+            </View>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="User Posts"
+        component={UserPost}
+        options={{
+          tabBarLabel: 'My Posts',
+          tabBarIcon: ({ focused }) => (
+            <View style={{ marginRight: 8 }}>
+              <Text style={{ fontSize: 16, color: focused ? "#0E9C67" : "#666" }}>
+                📋
               </Text>
             </View>
           ),

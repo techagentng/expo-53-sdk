@@ -28,7 +28,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/citizenx.png",
         "backgroundColor": "#0E9C67",
-        "targetSdkVersion": 36
+        "targetSdkVersion": 34
       },
       "package": "com.kennedy757.citixenx",
       "versionCode": 17,
@@ -74,7 +74,8 @@
         {
           "photosPermission": "Allow Citizen X to use your Photo."
         }
-      ]
+      ],
+      "expo-router"
     ],
     "extra": {
       "eas": {

@@ -101,7 +101,7 @@ const signup = createAsyncThunk(
     try {
       const formData = new FormData();
       formData.append("fullname", fullname);
-      formData.append("telephone", phoneNumber);
+      formData.append("telephone", phoneNumber);  // Changed from phoneNumber to telephone
       formData.append("username", username);
       formData.append("email", email);
       formData.append("password", password);
@@ -116,6 +116,7 @@ const signup = createAsyncThunk(
         } as any);
       }
 
+      console.log("Form Data before sending to server:", formData);
       const response = await axios.post(SIGNUP, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -129,9 +130,11 @@ const signup = createAsyncThunk(
         email,
         profileImage,
       };
+      console.log("Signup response data:", response.data);
       await AsyncStorage.setItem("user_details", JSON.stringify(userDetails));
       return response.data;
     } catch (error) {
+      console.log("Signup error response data:", (error as any)?.response?.data);
       if (axios.isAxiosError(error)) {
         const payload = error.response?.data || error.message || "Unknown error";
         return rejectWithValue(payload);
@@ -327,8 +330,7 @@ export const authSlice = createSlice({
       .addCase(signup.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.data;
-        if (action.payload.access_token) state.access_token = action.payload.access_token;
-        if (action.payload.refresh_token) state.refresh_token = action.payload.refresh_token;
+        // Note: Old implementation doesn't expect tokens in signup response
         state.status = action.payload.status;
       })
       .addCase(signup.rejected, (state, action) => {
