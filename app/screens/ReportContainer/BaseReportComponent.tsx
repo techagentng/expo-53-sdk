@@ -63,6 +63,8 @@ export interface ReportData {
   landmark?: string;
   latitude?: number;
   longitude?: number;
+  product_name?: string;
+  outage_length?: string;
 }
 
 interface BaseReportProps {

@@ -29,6 +29,9 @@ const UserPost = () => {
           headers: {
             Authorization: `Bearer ${value}`,
           },
+          params: {
+            filter: "" // Empty filter for no filtering
+          }
         });
         // console.log(
         //   "Auth Feeds successfully gotten:",
@@ -70,6 +73,9 @@ const UserPost = () => {
           headers: {
             Authorization: `Bearer ${value}`,
           },
+          params: {
+            filter: "" // Empty filter for no filtering
+          }
         });
         // console.log(
         //   "Auth Feeds successfully gotten:",
@@ -113,6 +119,9 @@ const UserPost = () => {
           headers: {
             Authorization: `Bearer ${value}`,
           },
+          params: {
+            filter: "" // Empty filter for no filtering
+          }
         });
         // console.log(
         //   "Auth Feeds successfully gotten:",

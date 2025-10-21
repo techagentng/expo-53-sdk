@@ -73,12 +73,16 @@ const Home = () => {
   }, []);
 
   async function fetchFeed(accessToken: string) {
+    // Set local loading to true, Redux loading is handled by the slice
     setLoading(true);
     try {
       const response = await axios.get(AUTH_FEEDS, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
+        params: {
+          filter: "" // Empty filter for no filtering as per backend requirements
+        }
       });
 
       const feed = response?.data?.incident_reports;
@@ -115,9 +119,9 @@ const Home = () => {
     }
   }, [accessToken]);
 
-  if (loading) return <LoadingImage />;
+  if (loading || isLoading) return <LoadingImage />;
 
-  if (error)
+  if (error || isError)
     return (
       <View style={styles.errorStyle}>
         <ErrorImage />

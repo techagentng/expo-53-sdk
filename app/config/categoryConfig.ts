@@ -69,65 +69,6 @@ export const REPORT_CATEGORIES: Record<string, ReportCategory> = {
     },
   },
 
-  roads: {
-    id: 'roads',
-    name: 'Roads',
-    title: 'Roads & Infrastructure',
-    fields: [
-      {
-        name: 'sub_report_type',
-        label: 'Type of Road Issue',
-        type: 'select',
-        required: true,
-        options: [
-          'Potholes',
-          'Damaged Roads',
-          'Poor Drainage',
-          'Missing Signage',
-          'Street Lighting',
-          'Traffic Congestion',
-          'Road Construction',
-          'Other'
-        ],
-      },
-      {
-        name: 'description',
-        label: 'Description',
-        type: 'textarea',
-        required: true,
-        placeholder: 'Describe the road issue',
-      },
-      {
-        name: 'state_name',
-        label: 'State',
-        type: 'custom',
-        required: true,
-        component: 'StateLocal',
-      },
-      {
-        name: 'landmark',
-        label: 'Location Details',
-        type: 'text',
-        required: false,
-        placeholder: 'Enter specific location or landmark',
-      },
-      {
-        name: 'is_anonymous',
-        label: 'Report Anonymously',
-        type: 'checkbox',
-        required: false,
-      },
-    ],
-    validation: (data: ReportData) => {
-      return !!(
-        data.sub_report_type &&
-        data.description &&
-        data.state_name &&
-        data.lga_name
-      );
-    },
-  },
-
   healthcare: {
     id: 'healthcare',
     name: 'HealthCare',
@@ -228,6 +169,304 @@ export const REPORT_CATEGORIES: Record<string, ReportCategory> = {
         type: 'text',
         required: false,
         placeholder: 'Enter school name',
+      },
+      {
+        name: 'is_anonymous',
+        label: 'Report Anonymously',
+        type: 'checkbox',
+        required: false,
+      },
+    ],
+    validation: (data: ReportData) => {
+      return !!(
+        data.sub_report_type &&
+        data.description &&
+        data.state_name &&
+        data.lga_name
+      );
+    },
+  },
+
+  roads: {
+    id: 'roads',
+    name: 'Roads',
+    title: 'Roads & Infrastructure',
+    fields: [
+      {
+        name: 'sub_report_type',
+        label: 'Type of Road Issue',
+        type: 'select',
+        required: true,
+        options: [
+          'Potholes',
+          'Damaged Roads',
+          'Poor Drainage',
+          'Missing Signage',
+          'Street Lighting',
+          'Traffic Congestion',
+          'Road Construction',
+          'Other'
+        ],
+      },
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
+        required: true,
+        placeholder: 'Describe the road issue',
+      },
+      {
+        name: 'state_name',
+        label: 'State',
+        type: 'custom',
+        required: true,
+        component: 'StateLocal',
+      },
+      {
+        name: 'landmark',
+        label: 'Location Details',
+        type: 'text',
+        required: false,
+        placeholder: 'Enter specific location or landmark',
+      },
+      {
+        name: 'is_anonymous',
+        label: 'Report Anonymously',
+        type: 'checkbox',
+        required: false,
+      },
+    ],
+    validation: (data: ReportData) => {
+      return !!(
+        data.sub_report_type &&
+        data.description &&
+        data.state_name &&
+        data.lga_name
+      );
+    },
+  },
+
+  fakeproduct: {
+    id: 'fakeproduct',
+    name: 'Fake products',
+    title: 'Fake Products',
+    fields: [
+      {
+        name: 'sub_report_type',
+        label: 'Select the type of Incident',
+        type: 'select',
+        required: true,
+        options: [
+          'Counterfeit Electronics',
+          'Fake Medicines',
+          'KnockOff Clothings',
+          'Counterfeit Cosmetics',
+          'Imitation Food Products'
+        ],
+      },
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
+        required: true,
+        placeholder: 'Enter Description',
+      },
+      {
+        name: 'product_name',
+        label: 'Product Name',
+        type: 'text',
+        required: true,
+        placeholder: 'Enter product name',
+      },
+      {
+        name: 'state_name',
+        label: 'State',
+        type: 'custom',
+        required: true,
+        component: 'StateLocal',
+      },
+      {
+        name: 'landmark',
+        label: 'Address/Landmark',
+        type: 'text',
+        required: false,
+        placeholder: 'Enter address or landmark',
+      },
+      {
+        name: 'is_anonymous',
+        label: 'Report Anonymously',
+        type: 'checkbox',
+        required: false,
+      },
+    ],
+    validation: (data: ReportData) => {
+      return !!(
+        data.sub_report_type &&
+        data.description &&
+        data.product_name &&
+        data.state_name &&
+        data.lga_name
+      );
+    },
+  },
+
+  election: {
+    id: 'election',
+    name: 'Election',
+    title: 'Election Issues',
+    fields: [
+      {
+        name: 'sub_report_type',
+        label: 'Type of Election Issue',
+        type: 'select',
+        required: true,
+        options: [
+          'Voter Suppression',
+          'Electoral Fraud',
+          'Polling Station Issues',
+          'Campaign Violations',
+          'Other'
+        ],
+      },
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
+        required: true,
+        placeholder: 'Describe the election issue',
+      },
+      {
+        name: 'state_name',
+        label: 'State',
+        type: 'custom',
+        required: true,
+        component: 'StateLocal',
+      },
+      {
+        name: 'landmark',
+        label: 'Location Details',
+        type: 'text',
+        required: false,
+        placeholder: 'Enter specific location',
+      },
+      {
+        name: 'is_anonymous',
+        label: 'Report Anonymously',
+        type: 'checkbox',
+        required: false,
+      },
+    ],
+    validation: (data: ReportData) => {
+      return !!(
+        data.sub_report_type &&
+        data.description &&
+        data.state_name &&
+        data.lga_name
+      );
+    },
+  },
+
+  portablewater: {
+    id: 'portablewater',
+    name: 'Portable Water',
+    title: 'Portable Water',
+    fields: [
+      {
+        name: 'sub_report_type',
+        label: 'Type of Water Issue',
+        type: 'select',
+        required: true,
+        options: [
+          'No Water Supply',
+          'Contaminated Water',
+          'Pipe Leaks',
+          'Water Billing Issues',
+          'Other'
+        ],
+      },
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
+        required: true,
+        placeholder: 'Describe the water issue',
+      },
+      {
+        name: 'state_name',
+        label: 'State',
+        type: 'custom',
+        required: true,
+        component: 'StateLocal',
+      },
+      {
+        name: 'landmark',
+        label: 'Location Details',
+        type: 'text',
+        required: false,
+        placeholder: 'Enter specific location',
+      },
+      {
+        name: 'is_anonymous',
+        label: 'Report Anonymously',
+        type: 'checkbox',
+        required: false,
+      },
+    ],
+    validation: (data: ReportData) => {
+      return !!(
+        data.sub_report_type &&
+        data.description &&
+        data.state_name &&
+        data.lga_name
+      );
+    },
+  },
+
+  power: {
+    id: 'power',
+    name: 'Power',
+    title: 'Power & Electricity',
+    fields: [
+      {
+        name: 'sub_report_type',
+        label: 'Type of Power Issue',
+        type: 'select',
+        required: true,
+        options: [
+          'Power Outage',
+          'Frequent Disconnections',
+          'High Electricity Bills',
+          'Faulty Equipment',
+          'Other'
+        ],
+      },
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
+        required: true,
+        placeholder: 'Describe the power issue',
+      },
+      {
+        name: 'outage_length',
+        label: 'Outage Length',
+        type: 'text',
+        required: false,
+        placeholder: 'Enter outage duration',
+      },
+      {
+        name: 'state_name',
+        label: 'State',
+        type: 'custom',
+        required: true,
+        component: 'StateLocal',
+      },
+      {
+        name: 'landmark',
+        label: 'Location Details',
+        type: 'text',
+        required: false,
+        placeholder: 'Enter specific location',
       },
       {
         name: 'is_anonymous',

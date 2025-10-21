@@ -32,6 +32,9 @@ import TextButton from "./TextButton";
           headers: {
             Authorization: `Bearer ${value}`,
           },
+          params: {
+            filter: "" 
+          }
         });
         //   "Auth Feeds successfully gotten:",
         //   response.data.incident_reports

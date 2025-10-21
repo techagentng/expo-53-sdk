@@ -68,7 +68,7 @@ class FeedService {
   }
 
   // Fetch feed data
-  async fetchFeed(page: number = 1, limit: number = 20): Promise<FeedResponse> {
+  async fetchFeed(page: number = 1, limit: number = 20, filter: string = ""): Promise<FeedResponse> {
     try {
       const token = await this.getAuthToken();
       const headers: Record<string, string> = {};
@@ -78,7 +78,7 @@ class FeedService {
       }
 
       const response = await this.api.get('', {
-        params: { page, limit },
+        params: { page, limit, filter },
         headers,
       });
 
@@ -158,14 +158,45 @@ class FeedService {
     }
   }
 
-  // Share a feed item
-  async shareFeed(feedId: string): Promise<string> {
+  // Get top states with report count
+  async getTopStates(): Promise<any> {
     try {
-      // Generate shareable link for the feed
-      const shareableLink = `https://citizenx.app/feed/${feedId}`;
-      return shareableLink;
+      const token = await this.getAuthToken();
+      const headers: Record<string, string> = {};
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await axios.get('https://citizenx-9hk2.onrender.com/api/v1/reports/top-states', {
+        headers,
+      });
+
+      return response.data;
     } catch (error) {
-      console.error('Error generating share link:', error);
+      console.error('Error fetching top states:', error);
+      throw this.handleError(error);
+    }
+  }
+
+  // Get reports by state
+  async getReportsByState(state: string): Promise<FeedResponse> {
+    try {
+      const token = await this.getAuthToken();
+      const headers: Record<string, string> = {};
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await axios.get(`https://citizenx-9hk2.onrender.com/api/v1/reports/by-state`, {
+        params: { state },
+        headers,
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching reports by state:', error);
       throw this.handleError(error);
     }
   }
