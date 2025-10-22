@@ -308,6 +308,33 @@ const createReport = createAsyncThunk(
   }
 );
 
+const authFeed = createAsyncThunk(
+  "auth/authFeed",
+  async ({ access_token }: { access_token?: string }, { rejectWithValue }) => {
+    try {
+      const token = access_token || await AsyncStorage.getItem('access_token');
+      if (!token) {
+        return rejectWithValue('No access token available');
+      }
+
+      const response = await axios.get(AUTH_FEEDS, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const payload = error.response?.data || error.message || 'Failed to fetch feeds';
+        return rejectWithValue(payload);
+      }
+      const message = error instanceof Error ? error.message : 'Failed to fetch feeds';
+      return rejectWithValue(message);
+    }
+  }
+);
+
 // Main auth slice
 export const authSlice = createSlice({
   name: "auth",
@@ -430,6 +457,19 @@ export const authSlice = createSlice({
       .addCase(createReport.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(authFeed.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(authFeed.fulfilled, (state, action) => {
+        state.loading = false;
+        state.auth_feed = action.payload;
+        state.error = null;
+      })
+      .addCase(authFeed.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
@@ -471,5 +511,5 @@ export const initializeAuth = () => async (dispatch: any) => {
 };
 
 export const { logout, resetUserStatus, setUserFromStorage, initializeBookmarks } = authSlice.actions;
-export { signup, login, googleLogin, profile_sec, rewardCount, createReport };
+export { signup, login, googleLogin, profile_sec, rewardCount, createReport, authFeed };
 export default authSlice.reducer;

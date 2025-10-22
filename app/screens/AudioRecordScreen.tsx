@@ -87,7 +87,7 @@ const AudioRecordScreen = ({ route, navigation }: any) => {
 
   // Timer Functionality
   useEffect(() => {
-    let interval: number | null = null;
+    let interval: NodeJS.Timeout | null = null;
     if (recording) {
       interval = setInterval(() => {
         setTimer((prevTime) => prevTime + 1);

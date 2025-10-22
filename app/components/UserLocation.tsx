@@ -35,7 +35,7 @@ const UserLocation = ({ location, setLocation }: any) => {
 
   useEffect(() => {
     getLocation();
-    let intervalId: number | undefined;
+    let intervalId: NodeJS.Timeout | undefined;
     if (permissionDenied) {
       intervalId = setInterval(() => {
         getLocation();

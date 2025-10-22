@@ -8,7 +8,7 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { COLORS, icons, SIZES } from "@/constants";
 import { authFeed } from "@/Redux/authSlice";
 import { useDispatch, useSelector } from "react-redux";

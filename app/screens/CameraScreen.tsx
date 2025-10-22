@@ -375,7 +375,7 @@ const CameraScreen = ({ route, navigation }: { route: any; navigation: any }) =>
   const [qrCodeDetected, setQrCodeDetected] = useState("");
   const [isBrowsing, setIsBrowsing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | number | null>(null);
   const [cameraZoom, setCameraZoom] = useState(0);
   const [cameraTorch, setCameraTorch] = useState(false);
   const [cameraFlash, setCameraFlash] = useState("off");
