@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,10 @@ import {
   StatusBar,
   Alert,
   Image,
+  TextInput,
 } from "react-native";
 import { SIZES, COLORS, icons } from "@/constants";
 import TextButton from "@/components/TextButton";
-import OTPInputView from "@twotalltotems/react-native-otp-input";
 
 interface OtpProps {
   navigation: any;
@@ -18,6 +18,31 @@ interface OtpProps {
 
 const Otp: React.FC<OtpProps> = ({ navigation }) => {
   const [timer, setTimer] = useState(60);
+  const [otp, setOtp] = useState(['', '', '', '']);
+  const inputRefs = useRef<TextInput[]>([]);
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 3) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-focus previous input on backspace (empty value)
+    if (!value && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+
+    // Check if OTP is complete
+    if (newOtp.every(digit => digit !== '')) {
+      console.log('OTP Complete:', newOtp.join(''));
+    }
+  };
 
   useEffect(() => {
     let interval = setInterval(() => {
@@ -70,25 +95,37 @@ const Otp: React.FC<OtpProps> = ({ navigation }) => {
           marginTop: SIZES.padding * 2,
         }}
       >
-        <OTPInputView
-          pinCount={4}
-          style={{
-            width: "100%",
-            height: 50,
-          }}
-          codeInputFieldStyle={{
-            width: 65,
-            height: 65,
-            borderRadius: SIZES.radius,
-            backgroundColor: COLORS.lightGray2,
-            color: COLORS.black,
-            fontWeight: "600",
-            fontSize: 20,
-          }}
-          onCodeFilled={(code) => {
-            console.log(code);
-          }}
-        />
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          width: '100%',
+          paddingHorizontal: 20,
+        }}>
+          {otp.map((digit, index) => (
+            <TextInput
+              key={index}
+              ref={(ref) => {
+                if (ref) inputRefs.current[index] = ref;
+              }}
+              style={{
+                width: 65,
+                height: 65,
+                borderRadius: SIZES.radius,
+                backgroundColor: COLORS.lightGray2,
+                color: COLORS.black,
+                fontWeight: "600",
+                fontSize: 20,
+                textAlign: 'center',
+                borderWidth: 1,
+                borderColor: digit ? '#0E9C67' : COLORS.lightGray1,
+              }}
+              value={digit}
+              onChangeText={(value) => handleOtpChange(index, value)}
+              keyboardType="numeric"
+              maxLength={1}
+            />
+          ))}
+        </View>
         <View
           style={{
             flexDirection: "row",
