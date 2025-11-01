@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { useAuth } from '../provider/AuthContext';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -24,8 +25,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   }
 
   if (!isAuthenticated) {
-    // In a real app, you would redirect to login/onboarding screen here
-    // For now, we'll just return null to hide the protected content
+    router.replace('/onboarding');
     return null;
   }
 

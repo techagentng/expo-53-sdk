@@ -486,17 +486,28 @@ export const initializeAuth = () => async (dispatch: any) => {
         const userData = JSON.parse(userDetails);
 
         if (userData && (userData.name || userData.fullname || userData.username)) {
-          dispatch(authSlice.actions.setUserFromStorage({
-            user: userData,
-            access_token: accessToken,
-            refresh_token: refreshToken || "",
-          }));
+          try {
+            await axios.get(PROFILE, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
 
-          dispatch(profile_sec({ access_token: accessToken })).catch((error: any) => {
-            console.log('Failed to fetch fresh profile, using stored data');
-          });
+            dispatch(authSlice.actions.setUserFromStorage({
+              user: userData,
+              access_token: accessToken,
+              refresh_token: refreshToken || "",
+            }));
 
-          return true;
+            dispatch(profile_sec({ access_token: accessToken })).catch((error: any) => {
+              console.log('Failed to fetch fresh profile, using stored data');
+            });
+
+            return true;
+          } catch (validationError) {
+            await AsyncStorage.removeItem('access_token');
+            await AsyncStorage.removeItem('refresh_token');
+            await AsyncStorage.removeItem('user_details');
+            return false;
+          }
         }
       } catch (parseError) {
         console.log('Error parsing stored user data:', parseError);

@@ -5,13 +5,15 @@ import { Ionicons } from '@expo/vector-icons';
 import MapIcon from '../components/icons/MapIcon';
 import PlusIcon from '../components/icons/PlusIcon';
 import BellIcon from '../components/icons/BellIcon';
+import { AuthGuard } from '../../components/AuthGuard';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'light';
 
   return (
-    <Tabs
+    <AuthGuard>
+      <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#0F5132',  // Dark green for active tabs
         tabBarInactiveTintColor: '#198754',  // Medium dark green for inactive tabs
@@ -95,6 +97,7 @@ export default function TabLayout() {
           ),
         }}
       />
-    </Tabs>
+      </Tabs>
+    </AuthGuard>
   );
 }
