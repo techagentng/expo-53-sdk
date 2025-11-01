@@ -339,7 +339,7 @@ export default function CreateTab() {
 
   const renderCategoryItem = ({ item }: { item: typeof REPORT_CATEGORIES[0] }) => (
     <TouchableOpacity
-      style={[styles.categoryItem, { backgroundColor: item.color }]}
+      style={styles.categoryItem}
       onPress={() => handleCategorySelect(item)}
     >
       <Text style={styles.categoryIcon}>{item.icon}</Text>
@@ -962,17 +962,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryItem: {
-    width: 100,
-    height: 100,
-    margin: 10,
-    borderRadius: 12,
+    width: '30%',
+    margin: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   categoryIcon: {
     fontSize: 24,
@@ -981,7 +976,7 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#fff',
+    color: COLORS.primary,
     textAlign: 'center',
   },
   modalContainer: {

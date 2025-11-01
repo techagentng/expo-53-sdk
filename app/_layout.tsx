@@ -84,20 +84,31 @@ export default function RootLayout() {
   useEffect(() => {
     console.log('🔄 Layout effect triggered:', { isAuthenticated, isReady, initialRoute, initTimeout });
 
-    if ((isAuthenticated !== null && !isReady) || initTimeout) {
-      // Determine initial route based on authentication status
-      const route = isAuthenticated ? '(tabs)' : 'onboarding';
-      setInitialRoute(route);
+    const decideInitialRoute = async () => {
+      if ((isAuthenticated !== null && !isReady) || initTimeout) {
+        try {
+          const accepted = await AsyncStorage.getItem('disclaimerAccepted');
+          // If disclaimer not accepted yet, show Disclaimer first
+          const route = !accepted ? 'Disclaimer' : (isAuthenticated ? '(tabs)' : 'onboarding');
+          setInitialRoute(route);
 
-      console.log(`🎯 Setting initial route: ${route} (timeout: ${initTimeout})`);
+          console.log(`🎯 Setting initial route: ${route} (timeout: ${initTimeout})`);
 
-      // Clear any existing navigation state
-      AsyncStorage.removeItem('navigationState').catch(console.warn);
+          // Clear any existing navigation state
+          AsyncStorage.removeItem('navigationState').catch(console.warn);
 
-      // Hide splash screen and mark as ready - Plugin handles this automatically
-      // SplashScreen.hideAsync().catch(console.warn); // Remove this - plugin handles it
-      setIsReady(true);
-    }
+          setIsReady(true);
+        } catch (e) {
+          console.warn('Failed to read disclaimerAccepted:', e);
+          // Fallback to previous behavior on error
+          const route = isAuthenticated ? '(tabs)' : 'onboarding';
+          setInitialRoute(route);
+          setIsReady(true);
+        }
+      }
+    };
+
+    decideInitialRoute();
   }, [isAuthenticated, isReady, initTimeout]);
 
   // Show loading screen while initializing (with timeout fallback)
