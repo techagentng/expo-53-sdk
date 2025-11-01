@@ -1,7 +1,7 @@
 import { ThemedView } from '@/components/themed-view';
 import onboardingData from '@/data/data';
 import { router } from 'expo-router';
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Image,
   StyleSheet,
@@ -10,9 +10,18 @@ import {
 } from "react-native";
 import Onboarding from 'react-native-onboarding-swiper';
 
+import { useAuth } from '@/provider/AuthContext';
+
 const OnboardingScreen = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated]);
 
   const handleGetStarted = () => {
     // Directly navigate to InitialSignUp without storing onboarding status

@@ -20,10 +20,12 @@ import LoadingImage from "@/components/loadingStates/LoadingImage";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SIGNIN } from "@/Redux/URL";
+import { useAuth } from "@/provider/AuthContext";
 import { useRouter } from "expo-router";
 
 const SignIn = () => {
   const router = useRouter();
+  const { login: loginWithAuthContext } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -43,59 +45,12 @@ const SignIn = () => {
     console.log('🚀 Starting sign-in process...');
 
     try {
-      console.log('📡 Making API request to:', SIGNIN);
-      console.log('📧 Login data:', { email, password: '***hidden***' });
-      console.log('🌐 Request config:', {
-        timeout: 30000,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        }
-      });
+      // Use centralized auth flow so Redux state is updated
+      const result = await loginWithAuthContext(email, password);
+      console.log('✅ Login thunk result:', result);
 
-      console.log('🔍 Testing network connectivity...');
-      try {
-        await axios.get('https://httpbin.org/get', { timeout: 5000 });
-        console.log('✅ Network connectivity test passed');
-      } catch (networkError) {
-        console.log('⚠️ Network connectivity test failed:', networkError instanceof Error ? networkError.message : String(networkError));
-      }
-
-      console.log('🔄 Sending request...');
-      const response = await axios.post(SIGNIN, {
-        email,
-        password,
-      }, {
-        timeout: 30000,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        }
-        // Note: Removed httpsAgent for React Native compatibility
-        // If SSL issues persist, we'll need a different approach
-      });
-
-      console.log('✅ API response received:', response.status);
-      console.log('📦 Response data:', response.data);
-      console.log('🔍 Response headers:', response.headers);
-
-      if (response.status === 200) {
-        const { access_token, refresh_token } = response.data.data;
-
-        if (!access_token || !refresh_token) {
-          throw new Error("Invalid response: Missing authentication tokens");
-        }
-
-        console.log('🔑 Storing tokens...');
-        await AsyncStorage.setItem("access_token", access_token);
-        await AsyncStorage.setItem("refresh_token", refresh_token);
-
-        console.log('✅ Tokens stored, navigating to tabs...');
-        setLoading(false);
-        router.replace("/(tabs)" as any);
-      } else {
-        throw new Error(`Unexpected status code: ${response.status}`);
-      }
+      setLoading(false);
+      router.replace("/(tabs)" as any);
     } catch (error) {
       setLoading(false);
       console.error('❌ Sign-in failed:', error);

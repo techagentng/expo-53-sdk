@@ -1,7 +1,8 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '../provider/AuthContext';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -14,9 +15,27 @@ interface AuthGuardProps {
  * Redirects to onboarding if user is not authenticated
  */
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, refreshAuth } = useAuth();
+  const [hydrating, setHydrating] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    const hydrateIfNeeded = async () => {
+      if (!isAuthenticated) {
+        const token = await AsyncStorage.getItem('access_token');
+        if (token) {
+          setHydrating(true);
+          try {
+            await refreshAuth();
+          } finally {
+            setHydrating(false);
+          }
+        }
+      }
+    };
+    hydrateIfNeeded();
+  }, [isAuthenticated, refreshAuth]);
+
+  if (isLoading || hydrating) {
     return fallback || (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0E9C67" />
