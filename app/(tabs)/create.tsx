@@ -10,6 +10,7 @@ import {
   ScrollView,
   Alert,
   Image,
+  Linking,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useDispatch } from 'react-redux';
@@ -98,6 +99,17 @@ export default function CreateTab() {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // When the media modal opens, optionally prompt user to pick media to make flow obvious
+  useEffect(() => {
+    console.log('Media modal open:', showMediaModal);
+    if (showMediaModal && !albums.length && !videoMedia.length && !imageLoading) {
+      // Do not block UI; slight delay ensures modal is visible before picker
+      setTimeout(() => {
+        mediaAccess().catch(() => {});
+      }, 200);
+    }
+  }, [showMediaModal]);
 
   const checkAuth = async () => {
     try {
@@ -279,30 +291,44 @@ export default function CreateTab() {
 
       // Dispatch the createReport action
       const result = await dispatch(createReport({ formData, token }));
+      console.log('createReport result:', {
+        type: (result as any)?.type,
+        status: (result as any)?.meta?.requestStatus,
+        payloadKeys: result && typeof result === 'object' ? Object.keys((result as any).payload || {}) : [],
+      });
 
       if (createReport.fulfilled.match(result)) {
         // Store report ID for media upload
-        const reportResponse = result.payload as any;
-        if (reportResponse && reportResponse.reportID) {
-          setReportId(reportResponse.reportID);
-        }
+        const payload: any = result.payload;
+        const possibleId = payload?.reportID
+          || payload?.id
+          || payload?.data?.reportID
+          || payload?.data?.id
+          || payload?.report_id
+          || payload?.data?.report_id
+          || null;
+        if (possibleId) setReportId(String(possibleId));
+        // Open media modal immediately; user can submit media or skip from within modal
+        console.log('Opening media modal now (post-report)');
+        setShowMediaModal(true);
+        // If for some reason the modal isn't visible shortly after, try once more
+        setTimeout(() => {
+          console.log('Reassert media modal visibility');
+          setShowMediaModal((v) => {
+            const next = v ? v : true;
+            console.log('Media modal visibility after reassert:', next);
+            return next;
+          });
+        }, 300);
 
-        // Success - show success modal and navigate to add media
-        Alert.alert(
-          'Report Submitted',
-          'Your report has been successfully submitted!',
-          [
-            {
-              text: 'Add Media',
-              onPress: () => setShowMediaModal(true),
-            },
-            {
-              text: 'Continue',
-              style: 'cancel',
-              onPress: () => router.replace('/(tabs)'),
-            },
-          ]
-        );
+        // Final fallback: if still not visible after 800ms, navigate to full-screen uploader
+        setTimeout(() => {
+          if (!showMediaModal) {
+            console.log('Media modal still not visible, navigating to MediaUploadModal screen');
+            const rid = possibleId ? String(possibleId) : '';
+            router.push({ pathname: '/screens/ReportContainer/MediaUploadModal' as any, params: { reportId: rid } } as any);
+          }
+        }, 800);
 
         // Reset form
         setReportData({ description: '', location: '' });
@@ -421,7 +447,14 @@ export default function CreateTab() {
   );
 
   const renderMediaModal = () => (
-    <Modal visible={showMediaModal} animationType="fade" transparent>
+    <Modal
+      visible={showMediaModal}
+      animationType="fade"
+      transparent
+      statusBarTranslucent
+      presentationStyle="overFullScreen"
+      onRequestClose={() => console.log('Media modal onRequestClose')}
+    >
       <View style={styles.mediaModalOverlay}>
         <View style={styles.mediaModal}>
           <View style={styles.mediaModalHeader}>
@@ -444,7 +477,7 @@ export default function CreateTab() {
 
             <TouchableOpacity
               style={styles.mediaOption}
-              onPress={() => router.push('/screens/AudioRecord' as any)}
+              onPress={() => router.push('/screens/AudioRecordScreen' as any)}
             >
               <Text style={styles.mediaIcon}>🎙️</Text>
               <Text style={styles.mediaText}>Record Audio</Text>
@@ -513,10 +546,11 @@ export default function CreateTab() {
               ]}
               onPress={() => {
                 if (albums.length || videoMedia.length) {
+                  console.log('Upload starting', { reportId, images: albums.length, videos: videoMedia.length });
                   uploadMediaFile();
                 } else {
-                  setShowMediaModal(false);
-                  router.replace('/(tabs)');
+                  // No media selected yet: prompt picker again instead of closing the modal
+                  mediaAccess().catch(() => {});
                 }
               }}
               disabled={isUploadingMedia}
@@ -526,9 +560,20 @@ export default function CreateTab() {
                   ? 'Uploading...'
                   : albums.length || videoMedia.length
                     ? 'Submit Media'
-                    : 'Continue without media'
+                    : 'Select Media'
                 }
               </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.continueButton, { backgroundColor: COLORS.lightGray1 }]}
+              onPress={() => {
+                console.log('User chose to skip media');
+                setShowMediaModal(false);
+                router.replace('/(tabs)');
+              }}
+            >
+              <Text style={[styles.continueButtonText, { color: COLORS.darkGray }]}>Skip</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -539,16 +584,32 @@ export default function CreateTab() {
   const mediaAccess = async () => {
     try {
       setImageLoading(true);
+      // Request library permission first
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        setImageLoading(false);
+        Alert.alert(
+          'Permission required',
+          'Photo library access is needed to select media. You can enable it in Settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+        return;
+      }
       let result = await ImagePicker.launchImageLibraryAsync({
         quality: 1,
         allowsMultipleSelection: true,
       });
 
+      console.log('Picker result (images):', result);
       if (!result.canceled) {
         const selectedImages = result.assets.map((asset) => asset.uri);
         setAlbums(selectedImages);
       } else {
-        Alert.alert('You did not select any images.');
+        // keep modal open and allow retry
+        console.log('No images selected');
       }
     } catch (error) {
       Alert.alert('Error accessing media library', error instanceof Error ? error.message : 'An unknown error occurred');
@@ -560,13 +621,26 @@ export default function CreateTab() {
   const videoAccess = async () => {
     try {
       setImageLoading(true);
-
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        setImageLoading(false);
+        Alert.alert(
+          'Permission required',
+          'Photo library access is needed to select videos. You can enable it in Settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+        return;
+      }
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Videos,
         quality: 1,
         allowsMultipleSelection: true,
       });
 
+      console.log('Picker result (videos):', result);
       if (!result.canceled) {
         const selectedVideos = result.assets;
         const validVideos = [];
@@ -588,7 +662,8 @@ export default function CreateTab() {
 
         setVideoMedia(validVideos);
       } else {
-        Alert.alert('You did not select any videos.');
+        // keep modal open and allow retry
+        console.log('No videos selected');
       }
     } catch (error) {
       Alert.alert('Error accessing media library', error instanceof Error ? error.message : 'An unknown error occurred');
@@ -598,10 +673,15 @@ export default function CreateTab() {
   };
 
   const uploadMediaFile = async () => {
-    if (!reportId || (!albums.length && !videoMedia.length)) {
-      setShowMediaModal(false);
-      router.replace('/(tabs)');
-      return;
+    if (!reportId) {
+      if (albums.length || videoMedia.length) {
+        Alert.alert('Unable to upload', 'We could not find the report ID. Please submit the report again and then add media.');
+        return;
+      } else {
+        setShowMediaModal(false);
+        router.replace('/(tabs)');
+        return;
+      }
     }
 
     try {
@@ -928,6 +1008,7 @@ export default function CreateTab() {
         renderItem={renderCategoryItem}
         keyExtractor={(item) => item.id.toString()}
         numColumns={3}
+        columnWrapperStyle={styles.gridRow}
         contentContainerStyle={styles.grid}
         showsVerticalScrollIndicator={false}
       />
@@ -958,7 +1039,10 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   grid: {
-    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  gridRow: {
     justifyContent: 'center',
   },
   categoryItem: {

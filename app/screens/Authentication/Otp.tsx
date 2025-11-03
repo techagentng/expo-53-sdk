@@ -9,6 +9,8 @@ import {
   Image,
   TextInput,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { router } from 'expo-router';
 import { SIZES, COLORS, icons } from "@/constants";
 import TextButton from "@/components/TextButton";
 
@@ -172,7 +174,7 @@ const Otp: React.FC<OtpProps> = ({ navigation }) => {
             fontWeight: "700",
             fontSize: 17,
           }}
-          onPress={() => navigation.navigate("MainScreen")}
+          onPress={() => router.replace('/(tabs)')}
         />
       </View>
       <View

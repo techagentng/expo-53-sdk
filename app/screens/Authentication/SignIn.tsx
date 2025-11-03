@@ -49,6 +49,7 @@ const SignIn = () => {
       const result = await loginWithAuthContext(email, password);
       console.log('✅ Login thunk result:', result);
 
+      await AsyncStorage.setItem('didLogin', 'true');
       setLoading(false);
       router.replace("/(tabs)" as any);
     } catch (error) {

@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { router } from 'expo-router';
 import AnonymousPost from "../components/AnonymousPost";
 import CameraVideoMedia from "../components/CameraVideoMedia";
 import TextComponent from "../components/TextComponent";
@@ -213,7 +214,7 @@ const ApiFeedDetail = ({ route, navigation }: {
                 fontWeight: "700",
                 fontSize: 17,
               }}
-              onPress={() => navigation.navigate("MainScreen")}
+              onPress={() => router.replace('/(tabs)')}
             />
           </View>
         }

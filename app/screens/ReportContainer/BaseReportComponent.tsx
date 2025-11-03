@@ -17,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { Video, ResizeMode } from 'expo-av';
 import axios from 'axios';
+import { router } from 'expo-router';
 
 import ReportWrapper from './ReportWrapper';
 import StateLocal from '../../components/StateLocal';
@@ -296,7 +297,7 @@ const BaseReportComponent: React.FC<BaseReportProps> = ({
 
       setAlbums([]);
       console.log(mediaResponse.data);
-      navigation.replace('MainScreen');
+      router.replace('/(tabs)');
     } catch (error) {
       setError(error);
       handleError(error);
@@ -572,7 +573,7 @@ const BaseReportComponent: React.FC<BaseReportProps> = ({
             style={{ marginLeft: 'auto' }}
             onPress={() => {
               setModalOpen(false);
-              navigation.replace('MainScreen');
+              router.replace('/(tabs)');
             }}
           >
             <Image
@@ -701,7 +702,7 @@ const BaseReportComponent: React.FC<BaseReportProps> = ({
                 // uploadMediaFile(reportId);
               } else {
                 setModalOpen(false);
-                navigation.replace('MainScreen');
+                router.replace('/(tabs)');
               }
             }}
           />

@@ -50,6 +50,13 @@ export const INCIDENT_TYPES: IncidentTypesData = {
     { label: "Transportation", value: "Transportation" },
     { label: "School Feeding", value: "School Feeding" },
   ],
+  'fake products': [
+    { label: 'Electronics', value: 'Electronics' },
+    { label: 'Pharmaceuticals', value: 'Pharmaceuticals' },
+    { label: 'Cosmetics', value: 'Cosmetics' },
+    { label: 'Clothing & Apparel', value: 'Clothing & Apparel' },
+    { label: 'Food & Beverages', value: 'Food & Beverages' },
+  ],
   environment: [
     { label: "Air Pollution", value: "Air Pollution" },
     { label: "Water Pollution", value: "Water Pollution" },

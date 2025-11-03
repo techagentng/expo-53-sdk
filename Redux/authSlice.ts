@@ -151,13 +151,18 @@ const login = createAsyncThunk(
         password,
       });
 
-      if (response.data.access_token) {
-        await AsyncStorage.setItem("access_token", response.data.access_token);
-        await AsyncStorage.setItem("refresh_token", response.data.refresh_token);
+      const top = response.data || {};
+      const nested = top.data || {};
+      const accessToken = top.access_token || nested.access_token;
+      const refreshToken = top.refresh_token || nested.refresh_token;
+
+      if (accessToken) {
+        await AsyncStorage.setItem("access_token", accessToken);
+        if (refreshToken) await AsyncStorage.setItem("refresh_token", refreshToken);
 
         const profileResponse = await axios.get(PROFILE, {
           headers: {
-            Authorization: `Bearer ${response.data.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
         });
 
@@ -165,8 +170,8 @@ const login = createAsyncThunk(
           await AsyncStorage.setItem("user_details", JSON.stringify(profileResponse.data.data));
 
           return {
-            access_token: response.data.access_token,
-            refresh_token: response.data.refresh_token,
+            access_token: accessToken,
+            refresh_token: refreshToken,
             user: profileResponse.data.data
           };
         } else {
@@ -199,13 +204,18 @@ const googleLogin = createAsyncThunk(
         expo_push_token
       });
 
-      if (response.data.access_token) {
-        await AsyncStorage.setItem("access_token", response.data.access_token);
-        await AsyncStorage.setItem("refresh_token", response.data.refresh_token);
+      const top = response.data || {};
+      const nested = top.data || {};
+      const accessToken = top.access_token || nested.access_token;
+      const refreshToken = top.refresh_token || nested.refresh_token;
+
+      if (accessToken) {
+        await AsyncStorage.setItem("access_token", accessToken);
+        if (refreshToken) await AsyncStorage.setItem("refresh_token", refreshToken);
 
         const profileResponse = await axios.get(PROFILE, {
           headers: {
-            Authorization: `Bearer ${response.data.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
         });
 
@@ -213,8 +223,8 @@ const googleLogin = createAsyncThunk(
           await AsyncStorage.setItem("user_details", JSON.stringify(profileResponse.data.data));
 
           return {
-            access_token: response.data.access_token,
-            refresh_token: response.data.refresh_token,
+            access_token: accessToken,
+            refresh_token: refreshToken,
             user: profileResponse.data.data
           };
         } else {
@@ -502,11 +512,23 @@ export const initializeAuth = () => async (dispatch: any) => {
             });
 
             return true;
-          } catch (validationError) {
-            await AsyncStorage.removeItem('access_token');
-            await AsyncStorage.removeItem('refresh_token');
-            await AsyncStorage.removeItem('user_details');
-            return false;
+          } catch (validationError: any) {
+            // Only clear storage on definitive auth errors; otherwise, keep session and continue
+            if (axios.isAxiosError(validationError) && validationError.response &&
+                (validationError.response.status === 401 || validationError.response.status === 403)) {
+              await AsyncStorage.removeItem('access_token');
+              await AsyncStorage.removeItem('refresh_token');
+              await AsyncStorage.removeItem('user_details');
+              return false;
+            }
+
+            // Network or server error without auth failure: proceed with stored data
+            dispatch(authSlice.actions.setUserFromStorage({
+              user: userData,
+              access_token: accessToken,
+              refresh_token: refreshToken || "",
+            }));
+            return true;
           }
         }
       } catch (parseError) {

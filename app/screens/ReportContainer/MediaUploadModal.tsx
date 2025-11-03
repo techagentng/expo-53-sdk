@@ -9,6 +9,10 @@ import {
   Text,
   Alert,
 } from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router, useLocalSearchParams } from 'expo-router';
+import { MEDIA_UPLOAD } from '@/Redux/URL';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { Video, ResizeMode } from 'expo-av';
@@ -36,8 +40,8 @@ interface MediaUploadModalProps {
 }
 
 const MediaUploadModal: React.FC<MediaUploadModalProps> = ({
-  visible,
-  onClose,
+  visible = true,
+  onClose = () => router.back(),
   onMediaSelected,
   maxFiles = 10,
   allowedTypes = ['image', 'video'],
@@ -47,6 +51,10 @@ const MediaUploadModal: React.FC<MediaUploadModalProps> = ({
   const [albums, setAlbums] = useState<string[]>([]);
   const [videoMedia, setVideoMedia] = useState<string[]>([]);
   const [imageLoading, setImageLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // When navigated as a screen, reportId can be supplied via route params
+  const { reportId } = useLocalSearchParams<{ reportId?: string }>();
 
   const renderVideoThumbnail = ({ item }: { item: string }) => (
     <View style={styles.videoContainer}>
@@ -136,7 +144,7 @@ const MediaUploadModal: React.FC<MediaUploadModalProps> = ({
     }
   };
 
-  const handleSubmitMedia = () => {
+  const handleSubmitMedia = async () => {
     const mediaFiles: MediaFile[] = [];
 
     // Process images
@@ -159,8 +167,55 @@ const MediaUploadModal: React.FC<MediaUploadModalProps> = ({
       });
     });
 
-    onMediaSelected(mediaFiles);
-    onClose();
+    // If a callback is provided (controlled usage), use it
+    if (typeof onMediaSelected === 'function') {
+      onMediaSelected(mediaFiles);
+      onClose();
+      return;
+    }
+
+    // Standalone screen usage: upload directly if we have a reportId
+    if (!reportId) {
+      Alert.alert('Unable to upload', 'Missing report ID. Please submit the report again and then add media.');
+      return;
+    }
+
+    if (!mediaFiles.length) {
+      // Nothing selected, treat like continue without media
+      onClose();
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const token = await AsyncStorage.getItem('access_token');
+      const form = new FormData();
+      form.append('report_id', String(reportId));
+      mediaFiles.forEach((file, index) => {
+        const ext = file.fileName.split('.').pop() || (file.type === 'image' ? 'jpg' : 'mp4');
+        form.append('mediaFiles', {
+          uri: file.uri,
+          type: `${file.type}/${ext}`,
+          name: file.fileName || `media_${index}.${ext}`,
+        } as any);
+      });
+
+      await axios.post(MEDIA_UPLOAD, form, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      Alert.alert('Success', 'Media uploaded successfully.');
+      onClose();
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      console.log('Direct media upload error:', error?.response?.data || error?.message || error);
+      Alert.alert('Upload Failed', error?.response?.data?.message || 'There was an issue uploading media.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleContinueWithoutMedia = () => {
@@ -185,7 +240,7 @@ const MediaUploadModal: React.FC<MediaUploadModalProps> = ({
         }}
       >
         <TouchableOpacity
-          style={{ marginLeft: 'auto' }}
+          style={{ alignSelf: 'flex-end', marginTop: SIZES.padding, marginRight: 4 }}
           onPress={onClose}
         >
           <Image
@@ -319,6 +374,7 @@ const MediaUploadModal: React.FC<MediaUploadModalProps> = ({
             fontSize: 17,
           }}
           onPress={() => {
+            if (isUploading) return;
             if (albums.length || videoMedia.length) {
               handleSubmitMedia();
             } else {

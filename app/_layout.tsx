@@ -87,9 +87,15 @@ export default function RootLayout() {
     const decideInitialRoute = async () => {
       if ((isAuthenticated !== null && !isReady) || initTimeout) {
         try {
+          const didLogin = await AsyncStorage.getItem('didLogin');
           const accepted = await AsyncStorage.getItem('disclaimerAccepted');
           // If disclaimer not accepted yet, show Disclaimer first
-          const route = !accepted ? 'Disclaimer' : (isAuthenticated ? '(tabs)' : 'onboarding');
+          let route = !accepted ? 'Disclaimer' : (isAuthenticated ? '(tabs)' : 'onboarding');
+          if (didLogin) {
+            route = '(tabs)';
+            // one-shot flag, clear it after using
+            AsyncStorage.removeItem('didLogin').catch(console.warn);
+          }
           setInitialRoute(route);
 
           console.log(`🎯 Setting initial route: ${route} (timeout: ${initTimeout})`);
@@ -155,7 +161,6 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="ComplainSuccess" />
                 <Stack.Screen name="screens/InitialSignUp" />
-                <Stack.Screen name="MainScreen" />
                 <Stack.Screen name="screens/Authentication/SignUp" />
                 <Stack.Screen name="screens/Authentication/SignIn" />
                 <Stack.Screen name="screens/Authentication/UserName" />
@@ -164,7 +169,7 @@ export default function RootLayout() {
                 <Stack.Screen name="screens/Authentication/Interest" />
                 <Stack.Screen name="screens/Authentication/SignUpMethod" />
                 <Stack.Screen name="screens/Authentication/Otp" />
-                <Stack.Screen name="screens/Authentication/ForgetPassword" />
+                <Stack.Screen name="screens/Authentication/ForgotPassword" />
                 <Stack.Screen name="screens/Authentication/SignUpSuccess" />
                 <Stack.Screen name="screens/HotspotSearch" />
                 <Stack.Screen name="screens/SettingsWrapper" />

@@ -17,6 +17,7 @@ interface AuthGuardProps {
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   const { isAuthenticated, isLoading, refreshAuth } = useAuth();
   const [hydrating, setHydrating] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const hydrateIfNeeded = async () => {
@@ -35,6 +36,14 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
     hydrateIfNeeded();
   }, [isAuthenticated, refreshAuth]);
 
+  // If unauthenticated, navigate in an effect to avoid 'cannot update a component' during render
+  useEffect(() => {
+    if (!isAuthenticated && !redirecting) {
+      setRedirecting(true);
+      router.replace('/onboarding');
+    }
+  }, [isAuthenticated, redirecting]);
+
   if (isLoading || hydrating) {
     return fallback || (
       <View style={styles.loadingContainer}>
@@ -44,8 +53,11 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   }
 
   if (!isAuthenticated) {
-    router.replace('/onboarding');
-    return null;
+    return fallback || (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0E9C67" />
+      </View>
+    );
   }
 
   return <>{children}</>;

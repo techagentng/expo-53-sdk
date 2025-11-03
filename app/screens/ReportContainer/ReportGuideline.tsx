@@ -9,6 +9,7 @@ import {
   Linking,
 } from "react-native";
 import React from "react";
+import { router } from 'expo-router';
 import { SIZES, COLORS, icons } from "@/constants";
 import type { ImageSourcePropType } from "react-native";
 
@@ -20,7 +21,7 @@ const ReportGuideline: React.FC<ReportGuidelineProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.primaryContainer}>
       <TouchableOpacity
-        onPress={() => navigation.navigate("MainScreen")}
+        onPress={() => router.replace('/(tabs)')}
         style={styles.imageContainer}
       >
         <Image

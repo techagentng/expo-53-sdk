@@ -7,6 +7,7 @@ import {
   Image,
 } from "react-native";
 import React, { useEffect } from "react";
+import { router } from 'expo-router';
 import { COLORS, SIZES, icons } from "@/constants";
 
 const ComplainSuccess = ({ navigation }: { navigation: any }) => {
@@ -47,10 +48,7 @@ const ComplainSuccess = ({ navigation }: { navigation: any }) => {
             backgroundColor: COLORS.primary,
           }}
           onPress={() => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "MainScreen" }],
-            });
+            router.replace('/(tabs)');
           }}
         >
           <Text

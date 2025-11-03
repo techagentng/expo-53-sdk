@@ -53,8 +53,9 @@ const SignUpMethod = () => {
 
       await AsyncStorage.setItem("access_token", access_token);
       await AsyncStorage.setItem("refresh_token", refresh_token);
+      await AsyncStorage.setItem('didLogin', 'true');
 
-      router.replace("/MainScreen");
+      router.replace("/(tabs)");
     } catch (error) {
       console.error("Google login error:", error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
