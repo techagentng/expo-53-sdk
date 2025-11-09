@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FONTS, SIZES, COLORS } from '@/constants';
 
 export interface AuthLayoutSignUpProps {
@@ -23,8 +24,10 @@ export default function AuthLayoutSignUp({
   steps = "",
   containerStyle,
 }: AuthLayoutSignUpProps) {
+  const insets = useSafeAreaInsets();
+  
   return (
-    <View style={{ ...styles.layoutContainer, ...containerStyle }}>
+    <View style={{ ...styles.layoutContainer, ...containerStyle, paddingBottom: insets.bottom + 20 }}>
       <ScrollView
         style={{
           flex: 1,

@@ -5,6 +5,7 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SIZES, COLORS } from "@/constants";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useNavigation } from '@react-navigation/native';
@@ -33,12 +34,14 @@ const AuthLayout = ({
   containerStyle,
 }: AuthLayoutProps) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
   
  
   const containerStyles: ViewStyle = {
     flex: 1,
     backgroundColor: "white",
     paddingTop: 20,
+    paddingBottom: insets.bottom + 20,
     ...(containerStyle as object)
   };
 

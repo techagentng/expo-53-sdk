@@ -38,13 +38,14 @@ const Profile = () => {
   const router = useRouter();
   const [access_token, setAccess_token] = useState("");
   const [catchUser, setCatchUser] = useState({});
-  const [isAppReady, setIsAppReady] = useState(false); // new state to control initial loading
+  const [isAppReady, setIsAppReady] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [isValidImage, setIsValidImage] = useState(false);
   const [avatarMenuVisible, setAvatarMenuVisible] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error, user, availableCoins } = useSelector(
+  const { loading, error, user, availableCoins, access_token: reduxToken } = useSelector(
     (state: RootState) => state.auth
   );
 
@@ -58,23 +59,28 @@ const Profile = () => {
       hasUsername: user?.username,
       hasToken: !!access_token,
       loading,
-      error
+      error,
+      errorType: typeof error,
+      timestamp: new Date().toISOString()
     });
   }, [user, access_token, loading, error]);
 
   const handleRefresh = () => {
-    if (access_token) {
-      dispatch(profile_sec({ access_token }));
-      dispatch(rewardCount({ access_token }));
+    const tokenToUse = reduxToken || access_token;
+    if (tokenToUse) {
+      dispatch(profile_sec({ access_token: tokenToUse }));
+      dispatch(rewardCount({ access_token: tokenToUse }));
       Alert.alert("Profile Refreshed", "Your profile details are updated!");
     }
   };
 
   const userProfile = async () => {
     try {
+      const tokenToUse = reduxToken || access_token;
+      if (!tokenToUse) return;
       const response = await axios.get(PROFILE, {
         headers: {
-          Authorization: `Bearer ${access_token}`,
+          Authorization: `Bearer ${tokenToUse}`,
         },
       });
       console.log(response.data);
@@ -110,24 +116,30 @@ const Profile = () => {
   }, [user?.profileImage]);
 
   useEffect(() => {
-    if (access_token) {
-      console.log('🔄 Profile: Fetching fresh data with token:', access_token);
-      dispatch(profile_sec({ access_token }));
-      dispatch(rewardCount({ access_token }));
+    // Use Redux token if available, otherwise fall back to local token
+    const tokenToUse = reduxToken || access_token;
+    if (tokenToUse) {
+      console.log('🔄 Profile: Fetching fresh data with token:', { hasReduxToken: !!reduxToken, hasLocalToken: !!access_token });
+      dispatch(profile_sec({ access_token: tokenToUse }));
+      dispatch(rewardCount({ access_token: tokenToUse }));
+      // Mark as loaded after first fetch attempt
+      setTimeout(() => setHasLoadedOnce(true), 2000);
     } else {
       console.log('⚠️ Profile: No access token available');
+      setHasLoadedOnce(true);
     }
     console.log('Profile: availableCoins after dispatch:', availableCoins);
-  }, [dispatch, access_token]);
+  }, [dispatch, access_token, reduxToken]);
 
   useFocusEffect(
     React.useCallback(() => {
-      if (access_token) {
-        dispatch(profile_sec({ access_token }));
-        dispatch(rewardCount({ access_token }));
+      const tokenToUse = reduxToken || access_token;
+      if (tokenToUse) {
+        dispatch(profile_sec({ access_token: tokenToUse }));
+        dispatch(rewardCount({ access_token: tokenToUse }));
         userProfile();
       }
-    }, [dispatch, access_token])
+    }, [dispatch, access_token, reduxToken])
   );
 
   function loguserout() {
@@ -137,18 +149,28 @@ const Profile = () => {
   }
 
   function refreshBtn() {
-    dispatch(profile_sec({ access_token }));
+    const tokenToUse = reduxToken || access_token;
+    if (tokenToUse) {
+      dispatch(profile_sec({ access_token: tokenToUse }));
+    }
   }
 
-  // Show loading spinner if not ready or loading
-  if (!isAppReady || loading) {
-    console.log('Profile: loading... isAppReady:', isAppReady, 'loading:', loading);
+
+  // Show loading spinner only on very first load
+  if (!isAppReady) {
+    console.log('Profile: waiting for AsyncStorage... isAppReady:', isAppReady);
+    return <LoadingImage />;
+  }
+  
+  // After AsyncStorage loads, show loading only if we haven't attempted to load data yet
+  if (!hasLoadedOnce && loading) {
+    console.log('Profile: initial data fetch... loading:', loading);
     return <LoadingImage />;
   }
 
   // Show error state if error exists
   if (error) {
-    console.log('Profile: error', error);
+    console.log('Profile: ERROR STATE - showing error UI', { error, hasUser: !!user, timestamp: new Date().toISOString() });
     return (
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", paddingHorizontal: 8, paddingTop: 5 }}>
@@ -203,7 +225,14 @@ const Profile = () => {
   }
   // Defensive: If user is missing or has no identifying info, show fallback UI
   if (!user || (!user.name && !user.fullname && !user.username)) {
-    console.log('Profile: no user data', user);
+    console.log('Profile: NO USER DATA - showing fallback UI', { 
+      user, 
+      hasUser: !!user,
+      hasName: user?.name,
+      hasFullname: user?.fullname,
+      hasUsername: user?.username,
+      timestamp: new Date().toISOString()
+    });
     return (
       <View style={styles.container}>
         <Text style={{ textAlign: 'center', marginTop: 40, color: COLORS.gray2 }}>

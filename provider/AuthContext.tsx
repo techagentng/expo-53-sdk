@@ -25,6 +25,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Treat presence of access_token as authenticated; user may hydrate shortly after
   const isAuthenticated = !!access_token;
+  
+  // Debug: Log auth state
+  useEffect(() => {
+    console.log('🔑 AuthContext state:', {
+      hasToken: !!access_token,
+      hasUser: !!user,
+      isAuthenticated,
+      loading,
+      timestamp: new Date().toISOString()
+    });
+  }, [access_token, user, isAuthenticated, loading]);
 
   // Remove the useEffect that calls initializeAuth since AppInitializer already handles this
   // useEffect(() => {

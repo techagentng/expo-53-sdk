@@ -8,6 +8,7 @@ import {
   StatusBar,
 } from "react-native";
 import React from "react";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from "@react-navigation/native";
 import { icons, COLORS } from "@/constants";
 import TextButton from "../../components/TextButton";
@@ -20,9 +21,13 @@ interface ReportWrapperProps {
 
 const ReportWrapper: React.FC<ReportWrapperProps> = ({ children, title }) => {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView style={styles.parentContainer}>
+    <ScrollView 
+      style={styles.parentContainer}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+    >
       <View style={styles.topContainer}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}

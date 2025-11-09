@@ -10,6 +10,7 @@ import {
   Linking,
 } from "react-native";
 import React, { useState } from "react";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SIZES, COLORS, icons } from "@/constants";
 import FormInput from "@/components/FormInput";
 import { validateEmail } from "@/utils/validation";
@@ -26,6 +27,7 @@ import { useRouter } from "expo-router";
 const SignIn = () => {
   const router = useRouter();
   const { login: loginWithAuthContext } = useAuth();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -104,7 +106,7 @@ const SignIn = () => {
   return (
     <ScrollView
       style={{ backgroundColor: COLORS.white }}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 20 }]}
     >
       <TouchableOpacity
         style={{
@@ -277,7 +279,7 @@ const SignIn = () => {
 
       {/** Error Modal */}
       <Modal animationType="slide" transparent={true} visible={errorModal}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { paddingBottom: insets.bottom + 20 }]}>
           <View
             style={{
               height: 90,

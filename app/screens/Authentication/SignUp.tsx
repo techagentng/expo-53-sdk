@@ -7,6 +7,7 @@ import {
   StyleSheet,
   StatusBar,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SIZES, COLORS, icons } from "@/constants";
 import FormInput from "@/components/FormInput";
 import TextButton from "@/components/TextButton";
@@ -16,6 +17,7 @@ import { useRouter } from "expo-router";
 
 const SignUp = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -41,7 +43,7 @@ const SignUp = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 20 }]}>
       <TouchableOpacity
         style={{
           position: "absolute",

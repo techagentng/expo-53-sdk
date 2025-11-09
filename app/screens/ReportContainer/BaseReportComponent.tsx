@@ -9,6 +9,7 @@ import {
   ScrollView,
   Text,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/Redux/store';
 import { createReport } from '@/Redux/authSlice';
@@ -79,6 +80,8 @@ const BaseReportComponent: React.FC<BaseReportProps> = ({
   navigation,
   children,
 }) => {
+  const insets = useSafeAreaInsets();
+  
   // State management
   const [formData, setFormData] = useState<Partial<ReportData>>({
     category: category.name,
@@ -567,6 +570,7 @@ const BaseReportComponent: React.FC<BaseReportProps> = ({
             borderWidth: 1.5,
             borderColor: COLORS.gray2,
             padding: 15,
+            paddingBottom: insets.bottom + 20,
           }}
         >
           <TouchableOpacity

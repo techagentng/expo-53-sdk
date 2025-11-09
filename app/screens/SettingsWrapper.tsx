@@ -8,11 +8,13 @@ import {
   Image,
 } from "react-native";
 import React, { useEffect } from "react";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from "@react-navigation/native";
 import { COLORS, icons } from "@/constants";
 
 const SettingsWrapper = ({ title, containerStyle, children }: any) => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={{ ...styles.container, ...containerStyle }}>
@@ -36,7 +38,9 @@ const SettingsWrapper = ({ title, containerStyle, children }: any) => {
         </TouchableOpacity>
         <Text style={styles.titleText}>{title}</Text>
       </View>
-      <ScrollView>{children}</ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
+        {children}
+      </ScrollView>
     </View>
   );
 };

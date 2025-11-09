@@ -355,6 +355,9 @@ export const authSlice = createSlice({
     },
     logout: (state) => {
       state.user = null;
+      state.access_token = null;
+      state.refresh_token = null;
+      state.error = null;
       AsyncStorage.removeItem("access_token");
       AsyncStorage.removeItem("refresh_token");
       AsyncStorage.removeItem("fullname");
@@ -441,7 +444,8 @@ export const authSlice = createSlice({
       .addCase(profile_sec.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-        state.user = null;
+        // Don't clear user data on profile fetch failure - keep existing user
+        // This prevents AuthGuard from redirecting when profile refresh fails
       })
       .addCase(rewardCount.pending, (state) => {
         state.loading = true;
@@ -491,54 +495,68 @@ export const initializeAuth = () => async (dispatch: any) => {
     const refreshToken = await AsyncStorage.getItem('refresh_token');
     const userDetails = await AsyncStorage.getItem('user_details');
 
+    console.log('🔄 InitializeAuth: Starting...', { hasToken: !!accessToken, hasUser: !!userDetails });
+
     if (accessToken && userDetails) {
       try {
         const userData = JSON.parse(userDetails);
 
         if (userData && (userData.name || userData.fullname || userData.username)) {
+          // Always set user data in Redux first to prevent redirect issues
+          console.log('✅ InitializeAuth: Setting user in Redux immediately');
+          dispatch(authSlice.actions.setUserFromStorage({
+            user: userData,
+            access_token: accessToken,
+            refresh_token: refreshToken || "",
+          }));
+
+          // Then try to validate token and fetch fresh data in background
           try {
             await axios.get(PROFILE, {
               headers: { Authorization: `Bearer ${accessToken}` },
             });
 
-            dispatch(authSlice.actions.setUserFromStorage({
-              user: userData,
-              access_token: accessToken,
-              refresh_token: refreshToken || "",
-            }));
+            console.log('✅ InitializeAuth: Token validated successfully');
 
+            // Fetch fresh profile data
             dispatch(profile_sec({ access_token: accessToken })).catch((error: any) => {
-              console.log('Failed to fetch fresh profile, using stored data');
+              console.log('⚠️ InitializeAuth: Failed to fetch fresh profile, using stored data');
             });
 
             return true;
           } catch (validationError: any) {
-            // Only clear storage on definitive auth errors; otherwise, keep session and continue
+            console.log('⚠️ InitializeAuth: Token validation failed', validationError?.response?.status);
+            
+            // Only clear storage on definitive auth errors (401/403)
             if (axios.isAxiosError(validationError) && validationError.response &&
                 (validationError.response.status === 401 || validationError.response.status === 403)) {
+              console.log('❌ InitializeAuth: Token expired/invalid, clearing storage');
               await AsyncStorage.removeItem('access_token');
               await AsyncStorage.removeItem('refresh_token');
               await AsyncStorage.removeItem('user_details');
+              
+              // Clear Redux state as well
+              dispatch(authSlice.actions.logout());
               return false;
             }
 
-            // Network or server error without auth failure: proceed with stored data
-            dispatch(authSlice.actions.setUserFromStorage({
-              user: userData,
-              access_token: accessToken,
-              refresh_token: refreshToken || "",
-            }));
+            // Network or other errors: keep the session active with stored data
+            console.log('✅ InitializeAuth: Network error, proceeding with stored data');
             return true;
           }
+        } else {
+          console.log('⚠️ InitializeAuth: User data incomplete');
         }
       } catch (parseError) {
-        console.log('Error parsing stored user data:', parseError);
+        console.log('❌ InitializeAuth: Error parsing stored user data:', parseError);
       }
+    } else {
+      console.log('⚠️ InitializeAuth: No stored credentials found');
     }
 
     return false;
   } catch (error) {
-    console.log('Error initializing auth:', error);
+    console.log('❌ InitializeAuth: Error:', error);
     return false;
   }
 };

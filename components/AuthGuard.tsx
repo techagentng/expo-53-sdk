@@ -18,31 +18,81 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   const { isAuthenticated, isLoading, refreshAuth } = useAuth();
   const [hydrating, setHydrating] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [checkedStorage, setCheckedStorage] = useState(false);
+
+  // Debug: Log auth state changes
+  useEffect(() => {
+    console.log('🔐 AuthGuard state:', { 
+      isAuthenticated, 
+      isLoading, 
+      hydrating, 
+      redirecting, 
+      checkedStorage,
+      timestamp: new Date().toISOString()
+    });
+  }, [isAuthenticated, isLoading, hydrating, redirecting, checkedStorage]);
 
   useEffect(() => {
     const hydrateIfNeeded = async () => {
-      if (!isAuthenticated) {
+      if (!isAuthenticated && !checkedStorage) {
         const token = await AsyncStorage.getItem('access_token');
+        console.log('🔐 AuthGuard: Checking AsyncStorage token:', !!token);
         if (token) {
+          console.log('🔐 AuthGuard: Token found in AsyncStorage, hydrating...');
           setHydrating(true);
           try {
             await refreshAuth();
+            console.log('🔐 AuthGuard: Hydration complete');
+          } finally {
+            setHydrating(false);
+            setCheckedStorage(true);
+          }
+        } else {
+          console.log('🔐 AuthGuard: No token in AsyncStorage');
+          setCheckedStorage(true);
+        }
+      }
+    };
+    hydrateIfNeeded();
+  }, [isAuthenticated, refreshAuth, checkedStorage]);
+
+  // If unauthenticated, navigate in an effect to avoid 'cannot update a component' during render
+  // IMPORTANT: Only redirect after we've checked AsyncStorage
+  useEffect(() => {
+    const checkAndRedirect = async () => {
+      if (!isAuthenticated && !redirecting && !isLoading && !hydrating && checkedStorage) {
+        // Double-check AsyncStorage before redirecting to prevent false positives
+        const token = await AsyncStorage.getItem('access_token');
+        const user = await AsyncStorage.getItem('user_details');
+        
+        console.log('🔍 AuthGuard: Checking redirect condition:', { 
+          hasToken: !!token, 
+          hasUser: !!user,
+          isAuthenticated,
+          checkedStorage,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (!token) {
+          console.log('⚠️ AuthGuard: User not authenticated and no token in storage, redirecting to onboarding');
+          setRedirecting(true);
+          router.replace('/onboarding');
+        } else {
+          console.log('⚠️ AuthGuard: Redux says not authenticated but token exists in storage, attempting to rehydrate');
+          setHydrating(true);
+          try {
+            await refreshAuth();
+            console.log('✅ AuthGuard: Rehydration completed');
+          } catch (error) {
+            console.error('❌ AuthGuard: Rehydration failed:', error);
           } finally {
             setHydrating(false);
           }
         }
       }
     };
-    hydrateIfNeeded();
-  }, [isAuthenticated, refreshAuth]);
-
-  // If unauthenticated, navigate in an effect to avoid 'cannot update a component' during render
-  useEffect(() => {
-    if (!isAuthenticated && !redirecting) {
-      setRedirecting(true);
-      router.replace('/onboarding');
-    }
-  }, [isAuthenticated, redirecting]);
+    checkAndRedirect();
+  }, [isAuthenticated, redirecting, isLoading, hydrating, checkedStorage, refreshAuth]);
 
   if (isLoading || hydrating) {
     return fallback || (

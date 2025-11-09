@@ -15,16 +15,8 @@ import { useAuth } from '@/provider/AuthContext';
 const OnboardingScreen = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/(tabs)');
-    }
-  }, [isAuthenticated]);
 
   const handleGetStarted = () => {
-    // Directly navigate to InitialSignUp without storing onboarding status
     router.replace('/screens/InitialSignUp');
   };
 
