@@ -373,6 +373,13 @@ export const authSlice = createSlice({
     initializeBookmarks: (state, action: { payload: Record<string, boolean> }) => {
       state.bookmarkedPosts = action.payload;
     },
+    bookmarkPost: (state, action: { payload: { postId: string } }) => {
+      const postId = action.payload.postId;
+      // Toggle bookmark state
+      state.bookmarkedPosts[postId] = !state.bookmarkedPosts[postId];
+      // Save to AsyncStorage
+      saveBookmarks(state.bookmarkedPosts);
+    },
     setUserFromStorage: (state, action: { payload: { user: any; access_token: string; refresh_token: string } }) => {
       state.user = action.payload.user;
       state.access_token = action.payload.access_token;
@@ -561,6 +568,6 @@ export const initializeAuth = () => async (dispatch: any) => {
   }
 };
 
-export const { logout, resetUserStatus, setUserFromStorage, initializeBookmarks } = authSlice.actions;
+export const { logout, resetUserStatus, setUserFromStorage, initializeBookmarks, bookmarkPost } = authSlice.actions;
 export { signup, login, googleLogin, profile_sec, rewardCount, createReport, authFeed };
 export default authSlice.reducer;

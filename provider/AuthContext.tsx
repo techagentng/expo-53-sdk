@@ -22,20 +22,46 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const dispatch = useDispatch();
   const { user, access_token, loading } = useSelector((state: RootState) => state.auth);
+  const [storageToken, setStorageToken] = React.useState<string | null>(null);
+  const [checkingStorage, setCheckingStorage] = React.useState(true);
 
-  // Treat presence of access_token as authenticated; user may hydrate shortly after
-  const isAuthenticated = !!access_token;
+  // Check AsyncStorage on mount
+  useEffect(() => {
+    const checkStorage = async () => {
+      try {
+        const token = await AsyncStorage.getItem('access_token');
+        setStorageToken(token);
+      } catch (error) {
+        console.error('Error checking AsyncStorage:', error);
+      } finally {
+        setCheckingStorage(false);
+      }
+    };
+    checkStorage();
+  }, []);
+
+  // Update storageToken when Redux token changes
+  useEffect(() => {
+    if (access_token) {
+      setStorageToken(access_token);
+    }
+  }, [access_token]);
+
+  // Treat presence of access_token (from Redux OR AsyncStorage) as authenticated
+  const isAuthenticated = !!access_token || !!storageToken;
   
   // Debug: Log auth state
   useEffect(() => {
     console.log('🔑 AuthContext state:', {
-      hasToken: !!access_token,
+      hasReduxToken: !!access_token,
+      hasStorageToken: !!storageToken,
       hasUser: !!user,
       isAuthenticated,
       loading,
+      checkingStorage,
       timestamp: new Date().toISOString()
     });
-  }, [access_token, user, isAuthenticated, loading]);
+  }, [access_token, storageToken, user, isAuthenticated, loading, checkingStorage]);
 
   // Remove the useEffect that calls initializeAuth since AppInitializer already handles this
   // useEffect(() => {
@@ -84,7 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     isAuthenticated,
     user,
-    isLoading: loading,
+    isLoading: loading || checkingStorage,
     login: loginFunction,
     logout: handleLogout,
     refreshAuth,

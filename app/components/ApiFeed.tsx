@@ -327,14 +327,9 @@ const ApiFeed = ({ item }: { item: FeedItem }) => {
     }
     setUpvoteCount(prevCount => prevCount || 0 + 1);
 
-    const data = {
-      postId: postId,
-      vote: 1,
-    };
-
     try {
       const token = await AsyncStorage.getItem("access_token");
-      const response = await axios.put(UPVOTE + "/" + postId, data, {
+      const response = await axios.put(`${UPVOTE}/${postId}`, {}, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -372,14 +367,9 @@ const ApiFeed = ({ item }: { item: FeedItem }) => {
     }
     setDownCount(prevCount => prevCount || 0 + 1);
 
-    const data = {
-      postId: postId,
-      vote: 1,
-    };
-
     try {
       const token = await AsyncStorage.getItem("access_token");
-      const response = await axios.put(DOWN_VOTE + "/" + postId, data, {
+      const response = await axios.put(`${DOWN_VOTE}/${postId}`, {}, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,

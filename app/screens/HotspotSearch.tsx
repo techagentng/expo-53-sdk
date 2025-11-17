@@ -5,6 +5,8 @@ import {
   View,
   TouchableOpacity,
   Image,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import type { ImageSourcePropType } from "react-native";
 import { COLORS, icons, SIZES } from "@/constants";
@@ -14,6 +16,9 @@ import TextButton from "@/components/TextButton";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "expo-router";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SEARCH } from "@/Redux/URL";
 
 const HotspotSearch = () => {
   const router = useRouter();
@@ -22,6 +27,7 @@ const HotspotSearch = () => {
   const [selectedLocalGov, setSelectedLocalGov] = useState<string | null>(null);
   const { loading, error, auth_feed } = useSelector((state: any) => state.auth);
   const [filteredData, setFilteredData] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const report = [
     { label: "Crime", value: "Crime" },
@@ -52,17 +58,61 @@ const HotspotSearch = () => {
     return reportType != "" && selectedState != null;
   }
 
-  useEffect(() => {
-    if (auth_feed && auth_feed.length > 0) {
-      const filtered = auth_feed.filter(
-        (report: any) =>
-          report.report_type_name === reportType &&
-          report.state_name === selectedState &&
-          report.lga_name === selectedLocalGov
-      );
-      setFilteredData(filtered);
+  const handleSearch = async () => {
+    if (!reportType || !selectedState) {
+      Alert.alert('Error', 'Please select report type and state');
+      return;
     }
-  }, [reportType, selectedState, selectedLocalGov, auth_feed]);
+
+    setIsSearching(true);
+    try {
+      const access_token = await AsyncStorage.getItem('access_token');
+      
+      // Build query parameters
+      const params: any = {
+        category: reportType,
+        state_name: selectedState,
+      };
+      
+      // Add LGA if selected
+      if (selectedLocalGov) {
+        params.lga_name = selectedLocalGov;
+      }
+
+      const response = await axios.get(SEARCH, {
+        params,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
+
+      if (response.data && response.data.reports) {
+        setFilteredData(response.data.reports);
+        router.push({
+          pathname: "/screens/SearchScreen",
+          params: {
+            filteredData: JSON.stringify(response.data.reports),
+            reportType,
+            selectedState,
+            selectedLocalGov: selectedLocalGov || ''
+          }
+        });
+      } else {
+        Alert.alert('No Results', 'No reports found matching your filters');
+      }
+    } catch (error: any) {
+      console.error('Search error:', error);
+      if (error.response) {
+        Alert.alert('Error', error.response.data.message || 'Failed to search reports');
+      } else if (error.request) {
+        Alert.alert('Network Error', 'Please check your internet connection');
+      } else {
+        Alert.alert('Error', 'An unexpected error occurred');
+      }
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -111,15 +161,15 @@ const HotspotSearch = () => {
           />
         </View>
         <TextButton
-          label="Report Filter"
-          disabled={submitPost() ? false : true}
+          label={isSearching ? "Searching..." : "Report Filter"}
+          disabled={!submitPost() || isSearching}
           buttonContainerStyle={{
             height: 55,
             alignItems: "center",
             justifyContent: "center",
             marginTop: 200,
             borderRadius: SIZES.radius,
-            backgroundColor: submitPost() ? "#0E9C67" : COLORS.invisible,
+            backgroundColor: submitPost() && !isSearching ? "#0E9C67" : COLORS.invisible,
             marginBottom: 50,
           }}
           labelStyle={{
@@ -127,18 +177,15 @@ const HotspotSearch = () => {
             fontWeight: "700",
             fontSize: 17,
           }}
-          onPress={() =>
-            router.push({
-              pathname: "/screens/SearchScreen",
-              params: {
-                filteredData: JSON.stringify(filteredData),
-                reportType,
-                selectedState,
-                selectedLocalGov
-              }
-            })
-          }
+          onPress={handleSearch}
         />
+        {isSearching && (
+          <ActivityIndicator 
+            size="large" 
+            color="#0E9C67" 
+            style={{ marginTop: 20 }} 
+          />
+        )}
       </View>
     </View>
   );
