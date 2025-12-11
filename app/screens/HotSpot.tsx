@@ -13,11 +13,14 @@ import type { ImageSourcePropType } from "react-native";
 import { COLORS, icons } from "@/constants";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSelector } from "react-redux";
 import LoadingImage from "../components/loadingStates/LoadingImage";
 import { useRouter } from "expo-router";
+import { HOST } from "@/Redux/URL";
 
 const HotSpot = () => {
   const router = useRouter();
+  const { access_token: reduxToken } = useSelector((state: any) => state.auth);
   const [categories, setCategories] = useState([]);
   const [reportCounts, setReportCounts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,19 +30,30 @@ const HotSpot = () => {
     const fetchReportCategories = async () => {
       setLoading(true);
       try {
-        const token = await AsyncStorage.getItem("access_token");
+        // Try Redux token first, then AsyncStorage
+        const token = reduxToken || await AsyncStorage.getItem("access_token");
 
         if (!token) {
-          Alert.alert("Error", "Access token not found. Please log in.");
+          Alert.alert(
+            "Session Expired",
+            "Please log in to continue.",
+            [
+              {
+                text: "Log In",
+                onPress: () => router.replace("/screens/Authentication/SignIn" as any),
+              },
+            ]
+          );
           setLoading(false);
           return;
         }
 
         // Make the API request
         const response = await axios.get(
-          "https://citizenx-9hk2.onrender.com/api/v1/top/report/categories",
+          `${HOST}/api/v1/top/report/categories`,
           {
             headers: {
+              'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`,
             },
           }
@@ -57,7 +71,7 @@ const HotSpot = () => {
     };
 
     fetchReportCategories();
-  }, []);
+  }, [reduxToken, router]);
 
   // ReportContainer Component
   const ReportContainer = ({ primaryText, secondaryText }: any) => (

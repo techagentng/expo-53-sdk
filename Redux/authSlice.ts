@@ -146,19 +146,32 @@ const login = createAsyncThunk(
   "auth/login",
   async ({ email, password }: { email: string, password: string }, { rejectWithValue }) => {
     try {
+      console.log('🔐 Login: Calling API with email:', email);
+      console.log('🔐 Login: API URL:', SIGNIN);
       const response = await axios.post(SIGNIN, {
         email,
         password,
       });
+
+      console.log('🔐 Login: Full API response:', response);
+      console.log('🔐 Login: Response status:', response.status);
+      console.log('🔐 Login: Response data:', JSON.stringify(response.data, null, 2));
 
       const top = response.data || {};
       const nested = top.data || {};
       const accessToken = top.access_token || nested.access_token;
       const refreshToken = top.refresh_token || nested.refresh_token;
 
+      console.log('🔐 Login: Extracted tokens:', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken });
+
       if (accessToken) {
+        console.log('🔐 Login: Storing tokens in AsyncStorage...');
         await AsyncStorage.setItem("access_token", accessToken);
         if (refreshToken) await AsyncStorage.setItem("refresh_token", refreshToken);
+        
+        // Verify token was stored
+        const storedToken = await AsyncStorage.getItem("access_token");
+        console.log('🔐 Login: Token stored successfully:', !!storedToken);
 
         const profileResponse = await axios.get(PROFILE, {
           headers: {
@@ -166,8 +179,11 @@ const login = createAsyncThunk(
           },
         });
 
+        console.log('🔐 Login: Profile response:', JSON.stringify(profileResponse.data, null, 2));
+
         if (profileResponse.data.data) {
           await AsyncStorage.setItem("user_details", JSON.stringify(profileResponse.data.data));
+          console.log('🔐 Login: User details stored successfully');
 
           return {
             access_token: accessToken,
@@ -178,9 +194,13 @@ const login = createAsyncThunk(
           throw new Error('No user data in profile response');
         }
       }
+      console.log('🔐 Login: No access token in response');
       return rejectWithValue("Failed to authenticate");
     } catch (error) {
+      console.log('🔐 Login: Error caught:', error);
       if (axios.isAxiosError(error)) {
+        console.log('🔐 Login: Axios error response:', error.response?.data);
+        console.log('🔐 Login: Axios error status:', error.response?.status);
         if (error.response) {
           return rejectWithValue(error.response.data);
         }
@@ -502,20 +522,53 @@ export const initializeAuth = () => async (dispatch: any) => {
     const refreshToken = await AsyncStorage.getItem('refresh_token');
     const userDetails = await AsyncStorage.getItem('user_details');
 
-    console.log('🔄 InitializeAuth: Starting...', { hasToken: !!accessToken, hasUser: !!userDetails });
+    console.log('🔄 InitializeAuth: Starting...', { hasToken: !!accessToken, hasUser: !!userDetails, userDetails });
 
-    if (accessToken && userDetails) {
-      try {
-        const userData = JSON.parse(userDetails);
+    if (accessToken) {
+      // Set token in Redux immediately even if user details are incomplete
+      let userData = null;
+      
+      if (userDetails) {
+        try {
+          userData = JSON.parse(userDetails);
+          console.log('🔄 InitializeAuth: Parsed user data:', userData);
+        } catch (parseError) {
+          console.log('⚠️ InitializeAuth: Error parsing user data, will fetch from API');
+        }
+      }
 
-        if (userData && (userData.name || userData.fullname || userData.username)) {
-          // Always set user data in Redux first to prevent redirect issues
-          console.log('✅ InitializeAuth: Setting user in Redux immediately');
-          dispatch(authSlice.actions.setUserFromStorage({
-            user: userData,
-            access_token: accessToken,
-            refresh_token: refreshToken || "",
-          }));
+      // Always set token in Redux first - this is critical for API calls
+      console.log('✅ InitializeAuth: Setting token in Redux immediately');
+      dispatch(authSlice.actions.setUserFromStorage({
+        user: userData || { username: 'user' }, // Fallback user object
+        access_token: accessToken,
+        refresh_token: refreshToken || "",
+      }));
+
+      // Check if we have valid user data, if not fetch from API
+      if (!userData || (!userData.name && !userData.fullname && !userData.username && !userData.id)) {
+        console.log('🔄 InitializeAuth: User data incomplete, fetching from API...');
+        try {
+          const profileResponse = await axios.get(PROFILE, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          
+          if (profileResponse.data?.data) {
+            userData = profileResponse.data.data;
+            await AsyncStorage.setItem('user_details', JSON.stringify(userData));
+            dispatch(authSlice.actions.setUserFromStorage({
+              user: userData,
+              access_token: accessToken,
+              refresh_token: refreshToken || "",
+            }));
+            console.log('✅ InitializeAuth: Fetched and stored fresh user data');
+          }
+        } catch (fetchError) {
+          console.log('⚠️ InitializeAuth: Could not fetch user profile:', fetchError);
+        }
+      }
+
+      if (userData && (userData.name || userData.fullname || userData.username || userData.id)) {
 
           // Then try to validate token and fetch fresh data in background
           try {
@@ -552,11 +605,9 @@ export const initializeAuth = () => async (dispatch: any) => {
             return true;
           }
         } else {
-          console.log('⚠️ InitializeAuth: User data incomplete');
+          console.log('⚠️ InitializeAuth: User data still incomplete after fetch, but token is set');
+          return true; // Still return true since we have a token
         }
-      } catch (parseError) {
-        console.log('❌ InitializeAuth: Error parsing stored user data:', parseError);
-      }
     } else {
       console.log('⚠️ InitializeAuth: No stored credentials found');
     }

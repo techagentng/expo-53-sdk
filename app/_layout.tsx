@@ -29,27 +29,34 @@ function AppInitializer({ onInitialized }: { onInitialized: (isAuthenticated: bo
         await dispatch(initializeAuth() as any);
 
         // Wait a bit for Redux state to update
-        setTimeout(() => {
-          try {
-            const state = store.getState();
-            const hasUser = !!state.auth?.user;
-            const hasToken = !!state.auth?.access_token;
+        // Check Redux state immediately after initializeAuth completes
+        try {
+          const state = store.getState();
+          const hasUser = !!state.auth?.user;
+          const hasToken = !!state.auth?.access_token;
 
-            console.log(`🔍 Redux state check: User=${hasUser}, Token=${hasToken}`);
-            console.log('User data:', state.auth?.user);
+          console.log(`🔍 Redux state check: User=${hasUser}, Token=${hasToken}`);
+          console.log('User data:', state.auth?.user);
 
-            if (hasUser && hasToken) {
-              console.log('✅ User is authenticated');
+          // Consider authenticated if we have a token (user data might still be loading)
+          if (hasToken) {
+            console.log('✅ User is authenticated (has token)');
+            onInitialized(true);
+          } else {
+            // Double-check AsyncStorage as fallback
+            const storedToken = await AsyncStorage.getItem('access_token');
+            if (storedToken) {
+              console.log('✅ User is authenticated (has stored token)');
               onInitialized(true);
             } else {
               console.log('❌ No valid authentication found');
               onInitialized(false);
             }
-          } catch (error) {
-            console.error('❌ Redux state access error:', error);
-            onInitialized(false);
           }
-        }, 1000); // Give more time for Redux to update
+        } catch (error) {
+          console.error('❌ Redux state access error:', error);
+          onInitialized(false);
+        }
 
       } catch (error) {
         console.error('❌ App initialization error:', error);
@@ -85,6 +92,12 @@ export default function RootLayout() {
     console.log('🔄 Layout effect triggered:', { isAuthenticated, isReady, initialRoute, initTimeout });
 
     const decideInitialRoute = async () => {
+      // Only set initial route once - don't change it after it's set
+      if (initialRoute) {
+        console.log('🔄 Initial route already set, skipping');
+        return;
+      }
+      
       if ((isAuthenticated !== null && !isReady) || initTimeout) {
         try {
           const didLogin = await AsyncStorage.getItem('didLogin');
@@ -115,7 +128,7 @@ export default function RootLayout() {
     };
 
     decideInitialRoute();
-  }, [isAuthenticated, isReady, initTimeout]);
+  }, [isAuthenticated, isReady, initTimeout, initialRoute]);
 
   // Show loading screen while initializing (with timeout fallback)
   if (!isReady || !initialRoute) {

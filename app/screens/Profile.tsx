@@ -116,19 +116,16 @@ const Profile = () => {
   }, [user?.profileImage]);
 
   useEffect(() => {
-    // Use Redux token if available, otherwise fall back to local token
+    console.log('🔄 Profile: Loading profile data');
+    // Try to load profile data if we have a token, but don't block rendering if we don't
     const tokenToUse = reduxToken || access_token;
     if (tokenToUse) {
-      console.log('🔄 Profile: Fetching fresh data with token:', { hasReduxToken: !!reduxToken, hasLocalToken: !!access_token });
+      console.log('🔄 Profile: Fetching fresh data with token');
       dispatch(profile_sec({ access_token: tokenToUse }));
       dispatch(rewardCount({ access_token: tokenToUse }));
-      // Mark as loaded after first fetch attempt
-      setTimeout(() => setHasLoadedOnce(true), 2000);
-    } else {
-      console.log('⚠️ Profile: No access token available');
-      setHasLoadedOnce(true);
     }
-    console.log('Profile: availableCoins after dispatch:', availableCoins);
+    // Mark as loaded immediately to prevent blocking the UI
+    setHasLoadedOnce(true);
   }, [dispatch, access_token, reduxToken]);
 
   useFocusEffect(
@@ -156,20 +153,20 @@ const Profile = () => {
   }
 
 
-  // Show loading spinner only on very first load
-  if (!isAppReady) {
-    console.log('Profile: waiting for AsyncStorage... isAppReady:', isAppReady);
-    return <LoadingImage />;
-  }
-  
-  // After AsyncStorage loads, show loading only if we haven't attempted to load data yet
-  if (!hasLoadedOnce && loading) {
-    console.log('Profile: initial data fetch... loading:', loading);
+  // Show loading spinner only if we're still loading and haven't shown any content yet
+  if ((!isAppReady || !hasLoadedOnce) && loading) {
+    console.log('Profile: Loading initial data...');
     return <LoadingImage />;
   }
 
-  // Show error state if error exists
-  if (error) {
+  // Show error state only if error exists AND it's not a login error AND we don't have a user
+  // Login errors should not block the profile page - user just needs to log in
+  const isLoginError = error && (
+    typeof error === 'object' && 
+    (error.errors === 'invalid email or password' || error.status === 'Unprocessable Entity')
+  );
+  
+  if (error && !isLoginError && !user) {
     console.log('Profile: ERROR STATE - showing error UI', { error, hasUser: !!user, timestamp: new Date().toISOString() });
     return (
       <View style={{ flex: 1 }}>
@@ -223,26 +220,29 @@ const Profile = () => {
       </View>
     );
   }
-  // Defensive: If user is missing or has no identifying info, show fallback UI
-  if (!user || (!user.name && !user.fullname && !user.username)) {
-    console.log('Profile: NO USER DATA - showing fallback UI', { 
-      user, 
-      hasUser: !!user,
-      hasName: user?.name,
-      hasFullname: user?.fullname,
-      hasUsername: user?.username,
-      timestamp: new Date().toISOString()
-    });
+  // Show a welcome message if no user data is available AND no token
+  // If we have a token, the user is logged in even if profile data is incomplete
+  const hasValidUser = user && (user.name || user.fullname || user.username || user.email || user.id);
+  const hasToken = reduxToken || access_token;
+  
+  if (!hasValidUser && !hasToken) {
     return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: 'center', marginTop: 40, color: COLORS.gray2 }}>
-          No user data found. Please log in again or refresh.
+      <View style={[styles.container, {justifyContent: 'center', alignItems: 'center'}]}>
+        <Text style={{ textAlign: 'center', color: COLORS.gray2, marginBottom: 20 }}>
+          Welcome! Sign in to access your profile.
         </Text>
         <TextButton
-          label="Refresh"
-          buttonContainerStyle={{ height: 50, alignItems: "center", justifyContent: "center", marginTop: 20, borderRadius: SIZES.radius, backgroundColor: "#0E9C67" }}
+          label="Sign In"
+          buttonContainerStyle={{ 
+            height: 50, 
+            width: 200,
+            alignItems: "center", 
+            justifyContent: "center", 
+            borderRadius: SIZES.radius, 
+            backgroundColor: "#0E9C67" 
+          }}
           labelStyle={{ color: COLORS.white, fontWeight: "700", fontSize: 18 }}
-          onPress={handleRefresh}
+          onPress={() => router.push("/screens/Authentication/SignIn")}
         />
       </View>
     );
@@ -250,12 +250,12 @@ const Profile = () => {
 
   // Helper function to get user display name
   const getDisplayName = () => {
-    return user?.name || user?.fullname || user?.username || 'User';
+    return user?.name || user?.fullname || user?.username || user?.email?.split('@')[0] || 'User';
   };
 
   // Helper function to get username
   const getUsername = () => {
-    return user?.username || user?.name || '';
+    return user?.username || user?.name || user?.email?.split('@')[0] || '';
   };
 
   return (

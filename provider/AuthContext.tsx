@@ -25,12 +25,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [storageToken, setStorageToken] = React.useState<string | null>(null);
   const [checkingStorage, setCheckingStorage] = React.useState(true);
 
-  // Check AsyncStorage on mount
+  // Check AsyncStorage on mount and sync to Redux if needed
   useEffect(() => {
     const checkStorage = async () => {
       try {
         const token = await AsyncStorage.getItem('access_token');
         setStorageToken(token);
+        
+        // If we have a token in storage but not in Redux, initialize auth
+        if (token && !access_token) {
+          console.log('🔄 AuthContext: Token in storage but not Redux, initializing...');
+          await dispatch(initializeAuth() as any);
+        }
       } catch (error) {
         console.error('Error checking AsyncStorage:', error);
       } finally {
@@ -38,7 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
     checkStorage();
-  }, []);
+  }, [dispatch, access_token]);
 
   // Update storageToken when Redux token changes
   useEffect(() => {

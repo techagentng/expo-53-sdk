@@ -1,6 +1,6 @@
 // FeedItem interface
+import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 import {
   SIGNUP,
   LOGIN_WITH_GOOGLE,
@@ -45,6 +45,28 @@ export interface FeedItem {
   isLiked?: boolean;
   isBookmarked?: boolean;
   tags?: string[];
+}
+
+// Define a type for API error responses
+interface ApiError extends Error {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
+// Define response types for better type safety
+interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  likes?: number;
+}
+
+interface LikeResponse extends ApiResponse {
+  likes: number;
+  isLiked: boolean;
 }
 
 export class FeedService {
@@ -139,25 +161,79 @@ export class FeedService {
     }
   }
 
-  async likeFeed(feedId: string): Promise<void> {
-    try {
-      // Mock implementation - replace with actual API call
-      console.log(`Liking feed ${feedId}`);
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (error) {
-      throw new Error('Failed to like feed');
+  private handleApiError(error: unknown): never {
+    if (axios.isAxiosError(error)) {
+      const apiError = error as AxiosError<{ message?: string }>;
+      const message = apiError.response?.data?.message || apiError.message;
+      console.error('API Error:', message);
+      throw new Error(message);
     }
+    console.error('Unexpected error:', error);
+    throw new Error('An unexpected error occurred');
   }
 
-  async unlikeFeed(feedId: string): Promise<void> {
+  async likeFeed(feedId: string): Promise<LikeResponse> {
     try {
-      // Mock implementation - replace with actual API call
-      console.log(`Unliking feed ${feedId}`);
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const token = await this.getAuthToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await axios.put<ApiResponse<{ likes: number }>>(
+        `${this.baseUrl}/api/v1/report/upvote/${feedId}`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        return {
+          success: true,
+          likes: response.data.likes || 0,
+          isLiked: true
+        };
+      } else {
+        throw new Error(response.data.message || 'Failed to like feed');
+      }
     } catch (error) {
-      throw new Error('Failed to unlike feed');
+      this.handleApiError(error);
+    }
+    return { success: false, likes: 0, isLiked: false }; // This line is just to satisfy TypeScript
+  }
+
+  async unlikeFeed(feedId: string): Promise<LikeResponse> {
+    try {
+      const token = await this.getAuthToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await axios.delete<ApiResponse<{ likes: number }>>(
+        `${this.baseUrl}/api/v1/report/upvote/${feedId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        return {
+          success: true,
+          likes: response.data.likes ?? 0,  // Ensure we always return a number
+          isLiked: false
+        };
+      } else {
+        throw new Error(response.data.message || 'Failed to unlike feed');
+      }
+    } catch (error) {
+      this.handleApiError(error);
+      return { success: false, likes: 0, isLiked: false };
     }
   }
 
