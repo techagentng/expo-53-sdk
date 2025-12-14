@@ -912,37 +912,32 @@ const ApiFeed = ({ item }: { item: FeedItem }) => {
       )}
       <View style={styles.iconContainer}>
         <View style={styles.voteContainer}>
-          {voteLoading ? (
-            <ActivityIndicator size={SIZES.ACTIVITY_INDICATOR} color={`${COLORS.black}`}  />
-          ) : (
-            <>
-              <TouchableOpacity
-                style={{
-                  width: 25,
-                  padding: 5,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onPress={() => upVoteClick(postId)}
-              >
-                <ThumbsUpIcon
-                  size={28}
-                  color={upvote === false ? "#000000" : "#114833"}
-                />
-              </TouchableOpacity>
-              <Text
-                style={{
-                  fontWeight: "500",
-                  fontSize: 16,
-                  marginHorizontal: 2,
-                  lineHeight: 17,
-                }}
-              >
-                {upvoteCount}
-              </Text>
-            </>
-          )}
+          <TouchableOpacity
+            style={{
+              width: 25,
+              padding: 5,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onPress={() => upVoteClick(postId)}
+            disabled={voteLoading}
+          >
+            <ThumbsUpIcon
+              size={28}
+              color={upvote === false ? "#000000" : "#114833"}
+            />
+          </TouchableOpacity>
+          <Text
+            style={{
+              fontWeight: "500",
+              fontSize: 16,
+              marginHorizontal: 2,
+              lineHeight: 17,
+            }}
+          >
+            {upvoteCount}
+          </Text>
           <View
             style={{
               width: 2,
@@ -951,37 +946,32 @@ const ApiFeed = ({ item }: { item: FeedItem }) => {
               backgroundColor: COLORS.gray,
             }}
           />
-          {downVoteLoading ? (
-            <ActivityIndicator size={SIZES.ACTIVITY_INDICATOR} color={`${COLORS.black}`}  />
-          ) : (
-            <>
-              <Text
-                style={{
-                  fontWeight: "500",
-                  fontSize: 16,
-                  marginHorizontal: 2,
-                  lineHeight: 17,
-                }}
-              >
-                {downCount}
-              </Text>
-              <TouchableOpacity
-                style={{
-                  width: 25,
-                  padding: 5,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onPress={() => downVoteClick(postId)}
-              >
-                <ThumbsDownIcon
-                  size={28}
-                  color={downvote === false ? "#000000" : "#9D0404"}
-                />
-              </TouchableOpacity>
-            </>
-          )}
+          <Text
+            style={{
+              fontWeight: "500",
+              fontSize: 16,
+              marginHorizontal: 2,
+              lineHeight: 17,
+            }}
+          >
+            {downCount}
+          </Text>
+          <TouchableOpacity
+            style={{
+              width: 25,
+              padding: 5,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onPress={() => downVoteClick(postId)}
+            disabled={downVoteLoading}
+          >
+            <ThumbsDownIcon
+              size={28}
+              color={downvote === false ? "#000000" : "#9D0404"}
+            />
+          </TouchableOpacity>
         </View>
         <View style={styles.followUpContainer}>
           <TouchableOpacity

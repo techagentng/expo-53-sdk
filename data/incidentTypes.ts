@@ -217,6 +217,14 @@ export const INCIDENT_TYPES: IncidentTypesData = {
     { label: "Noise Regulations", value: "Noise Regulations" },
     { label: "Health Impacts", value: "Health Impacts" },
   ],
+  'social services': [
+    { label: "Welfare Programs", value: "Welfare Programs" },
+    { label: "Child Protection", value: "Child Protection" },
+    { label: "Elderly Care", value: "Elderly Care" },
+    { label: "Disability Support", value: "Disability Support" },
+    { label: "Youth Services", value: "Youth Services" },
+    { label: "Community Support", value: "Community Support" },
+  ],
   others: [
     { label: "General Issues", value: "General Issues" },
     { label: "Government Services", value: "Government Services" },

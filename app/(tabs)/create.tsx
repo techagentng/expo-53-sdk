@@ -100,15 +100,9 @@ export default function CreateTab() {
     checkAuth();
   }, []);
 
-  // When the media modal opens, optionally prompt user to pick media to make flow obvious
+  // Log when media modal visibility changes
   useEffect(() => {
     console.log('Media modal open:', showMediaModal);
-    if (showMediaModal && !albums.length && !videoMedia.length && !imageLoading) {
-      // Do not block UI; slight delay ensures modal is visible before picker
-      setTimeout(() => {
-        mediaAccess().catch(() => {});
-      }, 200);
-    }
   }, [showMediaModal]);
 
   const checkAuth = async () => {
@@ -308,29 +302,8 @@ export default function CreateTab() {
           || payload?.data?.report_id
           || null;
         if (possibleId) setReportId(String(possibleId));
-        // Open media modal immediately; user can submit media or skip from within modal
-        console.log('Opening media modal now (post-report)');
-        setShowMediaModal(true);
-        // If for some reason the modal isn't visible shortly after, try once more
-        setTimeout(() => {
-          console.log('Reassert media modal visibility');
-          setShowMediaModal((v) => {
-            const next = v ? v : true;
-            console.log('Media modal visibility after reassert:', next);
-            return next;
-          });
-        }, 300);
-
-        // Final fallback: if still not visible after 800ms, navigate to full-screen uploader
-        setTimeout(() => {
-          if (!showMediaModal) {
-            console.log('Media modal still not visible, navigating to MediaUploadModal screen');
-            const rid = possibleId ? String(possibleId) : '';
-            router.push({ pathname: '/screens/ReportContainer/MediaUploadModal' as any, params: { reportId: rid } } as any);
-          }
-        }, 800);
-
-        // Reset form
+        
+        // Reset form first
         setReportData({ description: '', location: '' });
         setSelectedState(null);
         setSelectedLocalGov(null);
@@ -344,6 +317,10 @@ export default function CreateTab() {
         setIncidentTime(null);
         setRating(0);
         setShowReportForm(false);
+        
+        // Open media modal once
+        console.log('Opening media modal now (post-report)');
+        setShowMediaModal(true);
       } else if (createReport.rejected.match(result)) {
         // Handle error
         const errorPayload = result.payload as any;
