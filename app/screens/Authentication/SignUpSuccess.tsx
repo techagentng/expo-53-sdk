@@ -1,20 +1,12 @@
 import { View, Text, StyleSheet, StatusBar, Image } from "react-native";
-import React, { useEffect } from "react";
+import React from "react";
 import { icons, COLORS, SIZES } from "@/constants";
 import TextButton from "@/components/TextButton";
+import { useRouter, useLocalSearchParams } from "expo-router";
 
-const SignUpSuccess = ({ navigation, route }: any) => {
-  const { fullname, email, phoneNumber, password, username } =
-    route.params || {};
-
-  if (!fullname || !email || !phoneNumber || !password || !username) {
-    console.error("Missing signup information");
-    return (
-      <View style={styles.container}>
-        <Text>Error: Missing signup information. Please try again.</Text>
-      </View>
-    );
-  }
+const SignUpSuccess = () => {
+  const router = useRouter();
+  const { fullname } = useLocalSearchParams<{ fullname: string }>();
 
   return (
     <View style={styles.container}>
@@ -50,7 +42,7 @@ const SignUpSuccess = ({ navigation, route }: any) => {
               textAlign: "center",
             }}
           >
-            Welcome, {fullname}!
+            Welcome{fullname ? `, ${fullname}` : ''}!
           </Text>
         </View>
         <TextButton
@@ -70,10 +62,7 @@ const SignUpSuccess = ({ navigation, route }: any) => {
             fontSize: 17,
           }}
           onPress={() => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "SignIn" }],
-            });
+            router.replace("/screens/Authentication/SignIn" as any);
           }}
         />
       </View>

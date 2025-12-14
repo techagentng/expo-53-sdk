@@ -260,7 +260,10 @@ const SignUp = () => {
               fontSize: 17,
             }}
             onPress={() =>
-              router.push("/screens/Authentication/UserName" as any)
+              router.push({
+                pathname: "/screens/Authentication/UserName",
+                params: { fullname, email, phoneNumber, password, referralCode }
+              } as any)
             }
           />
         </View>

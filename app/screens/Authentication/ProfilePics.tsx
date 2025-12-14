@@ -19,16 +19,24 @@ import LoadingImage from "@/components/loadingStates/LoadingImage";
 import axios from "axios";
 import { SIGNUP } from "@/Redux/URL";
 import { Vibration } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const ProfilePics = ({ route }: any) => {
+const ProfilePics = () => {
   const router = useRouter();
+  const { fullname, email, phoneNumber, password, username, referralCode } = useLocalSearchParams<{
+    fullname: string;
+    email: string;
+    phoneNumber: string;
+    password: string;
+    username: string;
+    referralCode: string;
+  }>();
   const [profileImage, setProfileImage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [imageLoading, setImageLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorModal, setErrorModal] = useState(false);
-  const { fullname, email, phoneNumber, password, username, referralCode } = route.params;
 
   const mediaAccess = async () => {
     try {
@@ -68,15 +76,15 @@ const ProfilePics = ({ route }: any) => {
   // }, [error]);
 
   const signUpFnc = async () => {
-    //console.log("signup function called");
+    console.log("🚀 Signup: Starting with params:", { fullname, email, phoneNumber, username, referralCode });
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append("fullname", fullname);
-      formData.append("telephone", phoneNumber);
-      formData.append("username", username);
-      formData.append("email", email);
-      formData.append("password", password);
+      formData.append("fullname", fullname || "");
+      formData.append("telephone", phoneNumber || "");
+      formData.append("username", username || "");
+      formData.append("email", email || "");
+      formData.append("password", password || "");
       if (profileImage) {
         const fileType = profileImage.substring(
           profileImage.lastIndexOf(".") + 1
@@ -101,7 +109,26 @@ const ProfilePics = ({ route }: any) => {
 
       if (response.status === 201 || response.status === 200) {
         console.log("Signup response data:", response.data);
-        router.push("/screens/Authentication/SignUpSuccess" as any);
+        
+        // Store tokens from signup response
+        const { access_token, refresh_token, ...userData } = response.data.data || {};
+        if (access_token) {
+          await AsyncStorage.setItem("access_token", access_token);
+          console.log("✅ Signup: Access token stored");
+        }
+        if (refresh_token) {
+          await AsyncStorage.setItem("refresh_token", refresh_token);
+          console.log("✅ Signup: Refresh token stored");
+        }
+        if (userData) {
+          await AsyncStorage.setItem("user_details", JSON.stringify(userData));
+          console.log("✅ Signup: User details stored");
+        }
+        
+        router.push({
+          pathname: "/screens/Authentication/SignUpSuccess",
+          params: { fullname }
+        } as any);
       }
     } catch (error) {
       setLoading(false);

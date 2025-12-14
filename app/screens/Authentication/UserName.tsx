@@ -4,11 +4,17 @@ import AuthLayoutSignUp from "./AuthLayoutSignUp";
 import FormInput from "@/components/FormInput";
 import TextButton from "@/components/TextButton";
 import { View, Text, StyleSheet, StatusBar } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 
-const UserName = ({ route }: any) => {
+const UserName = () => {
   const router = useRouter();
-  const { fullname, email, phoneNumber, password, referralCode } = route.params;
+  const { fullname, email, phoneNumber, password, referralCode } = useLocalSearchParams<{
+    fullname: string;
+    email: string;
+    phoneNumber: string;
+    password: string;
+    referralCode: string;
+  }>();
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState("");
 
@@ -81,7 +87,10 @@ const UserName = ({ route }: any) => {
             fontSize: 17,
           }}
           onPress={() =>
-            router.push("/screens/Authentication/ProfilePics" as any)
+            router.push({
+              pathname: "/screens/Authentication/ProfilePics",
+              params: { fullname, email, phoneNumber, password, username, referralCode }
+            } as any)
           }
         />
       </View>
