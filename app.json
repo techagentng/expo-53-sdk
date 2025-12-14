@@ -7,7 +7,7 @@
     "icon": "./assets/images/citizenx.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/images//citizenx.png",
+      "image": "./assets/images/citizenx.png",
       "resizeMode": "contain",
       "backgroundColor": "#f3f2f2"
     },
@@ -31,7 +31,7 @@
         "targetSdkVersion": 34
       },
       "package": "com.kennedy757.citixenx",
-      "versionCode": 68,
+      "versionCode": 71,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -39,7 +39,11 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_MEDIA_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "web": {
@@ -81,6 +85,12 @@
       "eas": {
         "projectId": "06525c8d-e5e0-450e-93ec-ce6da43f75da"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/06525c8d-e5e0-450e-93ec-ce6da43f75da"
     }
   }
 }
