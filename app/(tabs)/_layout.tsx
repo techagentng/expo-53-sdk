@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapIcon from '../components/icons/MapIcon';
 import PlusIcon from '../components/icons/PlusIcon';
 import BellIcon from '../components/icons/BellIcon';
@@ -9,6 +10,7 @@ import BellIcon from '../components/icons/BellIcon';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'light';
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -19,8 +21,8 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: isDark ? '#fff' : '#000',
           borderTopColor: isDark ? '#e0e0e0' : '#333',
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: 8 + insets.bottom,
           paddingTop: 8,
         },
         tabBarShowLabel: true,

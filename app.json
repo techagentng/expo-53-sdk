@@ -31,7 +31,7 @@
         "targetSdkVersion": 34
       },
       "package": "com.kennedy757.citixenx",
-      "versionCode": 73,
+      "versionCode": 74,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
