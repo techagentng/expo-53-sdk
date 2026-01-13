@@ -543,56 +543,6 @@ export const REPORT_CATEGORIES: Record<string, ReportCategory> = {
       );
     },
   },
-
-  others: {
-    id: 'others',
-    name: 'Others',
-    title: 'Others',
-    fields: [
-      {
-        name: 'sub_report_type',
-        label: 'What are you reporting about',
-        type: 'text',
-        required: true,
-        placeholder: 'Enter report type',
-      },
-      {
-        name: 'description',
-        label: 'Description',
-        type: 'textarea',
-        required: true,
-        placeholder: 'Enter Description',
-      },
-      {
-        name: 'state_name',
-        label: 'State',
-        type: 'custom',
-        required: true,
-        component: 'StateLocal',
-      },
-      {
-        name: 'landmark',
-        label: 'Landmark',
-        type: 'text',
-        required: false,
-        placeholder: 'Enter landmark',
-      },
-      {
-        name: 'is_anonymous',
-        label: 'Report Anonymously',
-        type: 'checkbox',
-        required: false,
-      },
-    ],
-    validation: (data: ReportData) => {
-      return !!(
-        data.sub_report_type &&
-        data.description &&
-        data.state_name &&
-        data.lga_name
-      );
-    },
-  },
 };
 
 // Helper function to get category by name

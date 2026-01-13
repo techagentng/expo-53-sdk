@@ -47,8 +47,14 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ navigation }) => {
       if (axios.isAxiosError(error)) {
         setError(error);
         if (error.response) {
-          const message = error.response.data?.message || error.response.data || "There was an issue with the server. Please try again later.";
-          setErrorMessage(message);
+          const data: any = error.response.data;
+          const message =
+            data?.message ||
+            data?.error ||
+            data?.errors ||
+            (typeof data === 'string' ? data : null) ||
+            "There was an issue with the server. Please try again later.";
+          setErrorMessage(String(message));
         } else if (error.request) {
           setErrorMessage("Network error. Please check your internet connection and try again.");
         } else {

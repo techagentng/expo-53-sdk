@@ -103,7 +103,7 @@ export default function RootLayout() {
           const didLogin = await AsyncStorage.getItem('didLogin');
           const accepted = await AsyncStorage.getItem('disclaimerAccepted');
           // If disclaimer not accepted yet, show Disclaimer first
-          let route = !accepted ? 'Disclaimer' : (isAuthenticated ? '(tabs)' : 'onboarding');
+          let route = !accepted ? 'Disclaimer' : (isAuthenticated ? '(tabs)' : 'screens/Authentication/SignIn');
           if (didLogin) {
             route = '(tabs)';
             // one-shot flag, clear it after using
@@ -120,7 +120,7 @@ export default function RootLayout() {
         } catch (e) {
           console.warn('Failed to read disclaimerAccepted:', e);
           // Fallback to previous behavior on error
-          const route = isAuthenticated ? '(tabs)' : 'onboarding';
+          const route = isAuthenticated ? '(tabs)' : 'screens/Authentication/SignIn';
           setInitialRoute(route);
           setIsReady(true);
         }
@@ -163,7 +163,7 @@ export default function RootLayout() {
             <AppInitializer onInitialized={setIsAuthenticated} />
             <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
               <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-              <Stack screenOptions={{ headerShown: false }}>
+              <Stack initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
                 <Stack.Screen
                   name="onboarding"
                   options={{

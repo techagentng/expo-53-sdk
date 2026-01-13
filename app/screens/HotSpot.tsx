@@ -17,6 +17,7 @@ import { useSelector } from "react-redux";
 import LoadingImage from "../components/loadingStates/LoadingImage";
 import { useRouter } from "expo-router";
 import { HOST } from "@/Redux/URL";
+import { useFocusEffect } from '@react-navigation/native';
 
 const HotSpot = () => {
   const router = useRouter();
@@ -26,52 +27,49 @@ const HotSpot = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchReportCategories = async () => {
-      setLoading(true);
-      try {
-        // Try Redux token first, then AsyncStorage
-        const token = reduxToken || await AsyncStorage.getItem("access_token");
+  const fetchReportCategories = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = reduxToken || await AsyncStorage.getItem("access_token");
 
-        if (!token) {
-          Alert.alert(
-            "Session Expired",
-            "Please log in to continue.",
-            [
-              {
-                text: "Log In",
-                onPress: () => router.replace("/screens/Authentication/SignIn" as any),
-              },
-            ]
-          );
-          setLoading(false);
-          return;
-        }
-
-        // Make the API request
-        const response = await axios.get(
-          `${HOST}/api/v1/top/report/categories`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
+      if (!token) {
+        Alert.alert(
+          "Session Expired",
+          "Please log in to continue.",
+          [
+            {
+              text: "Log In",
+              onPress: () => router.replace("/screens/Authentication/SignIn" as any),
             },
-          }
+          ]
         );
-
-        // Set the fetched categories and report counts in state
-        setCategories(response.data.categories);
-        setReportCounts(response.data.report_counts);
-      } catch (err) {
-        setError("Failed to load data. Please try again.");
-        console.error("Error fetching categories:", err);
-      } finally {
         setLoading(false);
+        return;
       }
-    };
 
-    fetchReportCategories();
-  }, [reduxToken, router]);
+      const response = await axios.get(`${HOST}/api/v1/top/report/categories`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setCategories(response.data.categories);
+      setReportCounts(response.data.report_counts);
+    } catch (err) {
+      setError("Failed to load data. Please try again.");
+      console.error("Error fetching categories:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchReportCategories();
+    }, [reduxToken])
+  );
 
   // ReportContainer Component
   const ReportContainer = ({ primaryText, secondaryText }: any) => (

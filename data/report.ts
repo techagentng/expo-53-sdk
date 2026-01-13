@@ -127,12 +127,6 @@ const reportData = [
     title: "School",
     navigation: "School",
   },
-  {
-    id: 22,
-    image: require("../assets/reports/others.png"),
-    title: "Others",
-    navigation: "MakeReport",
-  },
 ];
 
 export default reportData;

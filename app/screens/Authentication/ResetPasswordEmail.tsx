@@ -63,8 +63,21 @@ const ResetPasswordEmail = () => {
       } catch (error) {
         setLoading(false);
         console.error('Reset Password Error:', error);
-        const message = error instanceof Error ? error.message : "Failed to initiate password reset";
-        setErrorMessage(message);
+
+        if (axios.isAxiosError(error)) {
+          const data: any = error.response?.data;
+          const message =
+            data?.message ||
+            data?.error ||
+            data?.errors ||
+            (typeof data === 'string' ? data : null) ||
+            error.message ||
+            "Failed to initiate password reset";
+          setErrorMessage(String(message));
+        } else {
+          const message = error instanceof Error ? error.message : "Failed to initiate password reset";
+          setErrorMessage(message);
+        }
         setErrorModal(true);
       }
     }

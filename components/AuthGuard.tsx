@@ -74,9 +74,9 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
         });
         
         if (!token) {
-          console.log('⚠️ AuthGuard: User not authenticated and no token in storage, redirecting to onboarding');
+          console.log('⚠️ AuthGuard: User not authenticated and no token in storage, redirecting to sign in');
           setRedirecting(true);
-          router.replace('/onboarding');
+          router.replace('/screens/Authentication/SignIn');
         } else {
           console.log('⚠️ AuthGuard: Redux says not authenticated but token exists in storage, attempting to rehydrate');
           setHydrating(true);

@@ -19,6 +19,13 @@ export const INCIDENT_TYPES: IncidentTypesData = {
     { label: "Fraud", value: "Fraud" },
     { label: "Domestic Violence", value: "Domestic Violence" },
   ],
+  election: [
+    { label: "Voter Suppression", value: "Voter Suppression" },
+    { label: "Electoral Fraud", value: "Electoral Fraud" },
+    { label: "Polling Station Issues", value: "Polling Station Issues" },
+    { label: "Campaign Violations", value: "Campaign Violations" },
+    { label: "Other", value: "Other" },
+  ],
   roads: [
     { label: "Potholes", value: "Potholes" },
     { label: "Road Construction", value: "Road Construction" },
@@ -224,15 +231,5 @@ export const INCIDENT_TYPES: IncidentTypesData = {
     { label: "Disability Support", value: "Disability Support" },
     { label: "Youth Services", value: "Youth Services" },
     { label: "Community Support", value: "Community Support" },
-  ],
-  others: [
-    { label: "General Issues", value: "General Issues" },
-    { label: "Government Services", value: "Government Services" },
-    { label: "Public Services", value: "Public Services" },
-    { label: "Community Issues", value: "Community Issues" },
-    { label: "Social Issues", value: "Social Issues" },
-    { label: "Economic Issues", value: "Economic Issues" },
-    { label: "Political Issues", value: "Political Issues" },
-    { label: "Other", value: "Other" },
   ],
 };

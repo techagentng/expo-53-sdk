@@ -53,7 +53,6 @@ const REPORT_CATEGORIES = [
   { id: 21, name: 'Street Lighting', icon: '💡', color: '#FADBD8' },
   { id: 22, name: 'Sanitation', icon: '🚽', color: '#ABEBC6' },
   { id: 23, name: 'Noise Pollution', icon: '🔊', color: '#F9CA24' },
-  { id: 24, name: 'Others', icon: '📋', color: '#6C5CE7' },
 ];
 
 export default function CreateTab() {
@@ -94,6 +93,8 @@ export default function CreateTab() {
   const [incidentDate, setIncidentDate] = useState<Date | null>(null);
   const [incidentTime, setIncidentTime] = useState<Date | null>(null);
 
+  const getIncidentTypesKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, ' ');
+
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
@@ -115,14 +116,8 @@ export default function CreateTab() {
   };
 
   const handleCategorySelect = (category: typeof REPORT_CATEGORIES[0]) => {
-    if (category.name === 'Others') {
-      // Navigate to MakeReport screen for "Others"
-      router.push('/screens/MakeReport' as any);
-    } else {
-      // Show specific report form for other categories
-      setSelectedCategory(category);
-      setShowReportForm(true);
-    }
+    setSelectedCategory(category);
+    setShowReportForm(true);
   };
 
   const getCurrentLocation = async () => {
@@ -271,12 +266,6 @@ export default function CreateTab() {
         }
       }
 
-      if (categoryName === 'others') {
-        if (reportType.trim()) {
-          formData.append('report_type', reportType.trim());
-        }
-      }
-
       if (reportData.location.trim()) {
         formData.append('landmark', reportData.location.trim());
       }
@@ -311,7 +300,6 @@ export default function CreateTab() {
         setRoadName('');
         setOutageLength('');
         setCauseOfAccident('');
-        setReportType('');
         setEmergencyResponse(null);
         setIncidentDate(null);
         setIncidentTime(null);
@@ -360,7 +348,7 @@ export default function CreateTab() {
           <Text style={styles.modalTitle}>Report {selectedCategory?.name}</Text>
         </View>
 
-        <ScrollView style={styles.formContainer}>
+        <ScrollView style={styles.formContainer} contentContainerStyle={styles.formContent}>
           <Text style={styles.label}>Description *</Text>
           <TextInput
             style={[styles.textInput, styles.textArea]}
@@ -376,7 +364,11 @@ export default function CreateTab() {
             <RNPickerSelect
               placeholder={{ label: "Select type of incident", value: null }}
               onValueChange={(value) => setSubReportType(value || '')}
-              items={selectedCategory ? INCIDENT_TYPES[selectedCategory.name.toLowerCase()] || [] : []}
+              items={
+                selectedCategory
+                  ? INCIDENT_TYPES[getIncidentTypesKey(selectedCategory.name)] || []
+                  : []
+              }
               value={subReportType}
               style={{
                 inputIOS: styles.pickerInput,
@@ -765,27 +757,27 @@ export default function CreateTab() {
       case 'roads':
         return (
           <View>
-            <Text style={styles.label}>Road Name *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter road name"
-              value={roadName}
-              onChangeText={setRoadName}
-            />
+            <View style={styles.twoColumnRow}>
+              <TextInput
+                style={[styles.textInput, styles.twoColumnLeft]}
+                placeholder="Road name"
+                value={roadName}
+                onChangeText={setRoadName}
+              />
 
-            <Text style={styles.label}>Road Rating</Text>
-            <View style={styles.ratingContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity
-                  key={star}
-                  onPress={() => setRating(star)}
-                  style={styles.starButton}
-                >
-                  <Text style={[styles.star, rating >= star && styles.starSelected]}>
-                    ★
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <View style={[styles.ratingContainer, styles.twoColumnRight, { marginBottom: 0, justifyContent: 'flex-end' }]}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => setRating(star)}
+                    style={styles.starButton}
+                  >
+                    <Text style={[styles.star, rating >= star && styles.starSelected]}>
+                      ★
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           </View>
         );
@@ -794,27 +786,27 @@ export default function CreateTab() {
       case 'power':
         return (
           <View>
-            <Text style={styles.label}>Outage Duration (if applicable)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g., 2 hours, 1 day"
-              value={outageLength}
-              onChangeText={setOutageLength}
-            />
+            <View style={styles.twoColumnRow}>
+              <TextInput
+                style={[styles.textInput, styles.twoColumnLeft]}
+                placeholder="Outage (optional)"
+                value={outageLength}
+                onChangeText={setOutageLength}
+              />
 
-            <Text style={styles.label}>Power Supply Rating</Text>
-            <View style={styles.ratingContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity
-                  key={star}
-                  onPress={() => setRating(star)}
-                  style={styles.starButton}
-                >
-                  <Text style={[styles.star, rating >= star && styles.starSelected]}>
-                    ★
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <View style={[styles.ratingContainer, styles.twoColumnRight, { marginBottom: 0, justifyContent: 'flex-end' }]}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => setRating(star)}
+                    style={styles.starButton}
+                  >
+                    <Text style={[styles.star, rating >= star && styles.starSelected]}>
+                      ★
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           </View>
         );
@@ -822,36 +814,36 @@ export default function CreateTab() {
       case 'crime':
         return (
           <View>
-            <Text style={styles.label}>Incident Date</Text>
-            <TouchableOpacity
-              style={styles.dateTimeButton}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text style={styles.dateTimeButtonText}>
-                {incidentDate ? incidentDate.toLocaleDateString() : 'Select Date'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.twoColumnRow}>
+              <TouchableOpacity
+                style={[styles.dateTimeButton, styles.twoColumnLeft]}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={styles.dateTimeButtonText}>
+                  {incidentDate ? incidentDate.toLocaleDateString() : 'Date'}
+                </Text>
+              </TouchableOpacity>
 
-            <Text style={styles.label}>Incident Time</Text>
-            <TouchableOpacity
-              style={styles.dateTimeButton}
-              onPress={() => setShowTimePicker(true)}
-            >
-              <Text style={styles.dateTimeButtonText}>
-                {incidentTime ? incidentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Select Time'}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.dateTimeButton, styles.twoColumnRight]}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Text style={styles.dateTimeButtonText}>
+                  {incidentTime ? incidentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Time'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-            <Text style={styles.label}>Emergency Response</Text>
-            <View style={styles.checkboxContainer}>
+            <View style={[styles.checkboxContainer, styles.responseRow]}>
+              <Text style={styles.responseLabel}>Response:</Text>
               <TouchableOpacity
                 style={styles.checkboxOption}
                 onPress={() => setEmergencyResponse(true)}
               >
                 <Text style={[styles.checkbox, emergencyResponse === true && styles.checkboxSelected]}>
-                  ☐
+                  {emergencyResponse === true ? '☑' : '☐'}
                 </Text>
-                <Text style={styles.checkboxLabel}>Yes, there was response</Text>
+                <Text style={styles.checkboxLabel}>Yes</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -859,9 +851,9 @@ export default function CreateTab() {
                 onPress={() => setEmergencyResponse(false)}
               >
                 <Text style={[styles.checkbox, emergencyResponse === false && styles.checkboxSelected]}>
-                  ☐
+                  {emergencyResponse === false ? '☑' : '☐'}
                 </Text>
-                <Text style={styles.checkboxLabel}>No response</Text>
+                <Text style={styles.checkboxLabel}>No</Text>
               </TouchableOpacity>
             </View>
 
@@ -922,24 +914,23 @@ export default function CreateTab() {
       case 'accidents':
         return (
           <View>
-            <Text style={styles.label}>Cause of Incident</Text>
             <TextInput
               style={styles.textInput}
-              placeholder="Describe what caused the incident"
+              placeholder="Cause of incident"
               value={causeOfAccident}
               onChangeText={setCauseOfAccident}
             />
 
-            <Text style={styles.label}>Emergency Response</Text>
-            <View style={styles.checkboxContainer}>
+            <View style={[styles.checkboxContainer, styles.responseRow]}>
+              <Text style={styles.responseLabel}>Response:</Text>
               <TouchableOpacity
                 style={styles.checkboxOption}
                 onPress={() => setEmergencyResponse(true)}
               >
                 <Text style={[styles.checkbox, emergencyResponse === true && styles.checkboxSelected]}>
-                  ☐
+                  {emergencyResponse === true ? '☑' : '☐'}
                 </Text>
-                <Text style={styles.checkboxLabel}>Yes, there was response</Text>
+                <Text style={styles.checkboxLabel}>Yes</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -947,26 +938,11 @@ export default function CreateTab() {
                 onPress={() => setEmergencyResponse(false)}
               >
                 <Text style={[styles.checkbox, emergencyResponse === false && styles.checkboxSelected]}>
-                  ☐
+                  {emergencyResponse === false ? '☑' : '☐'}
                 </Text>
-                <Text style={styles.checkboxLabel}>No response</Text>
+                <Text style={styles.checkboxLabel}>No</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        );
-
-      case 'others':
-        return (
-          <View>
-            <Text style={styles.label}>What are you reporting about?</Text>
-            <TextInput
-              style={[styles.textInput, styles.textArea]}
-              multiline
-              numberOfLines={3}
-              placeholder="Please describe what you're reporting about"
-              value={reportType}
-              onChangeText={setReportType}
-            />
           </View>
         );
 
@@ -1065,6 +1041,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  formContent: {
+    paddingBottom: 40,
+  },
   label: {
     fontSize: 16,
     fontWeight: '600',
@@ -1140,6 +1119,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 16,
   },
+  twoColumnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  twoColumnLeft: {
+    flex: 1,
+    marginRight: 8,
+  },
+  twoColumnRight: {
+    flex: 1,
+    marginLeft: 8,
+  },
   starButton: {
     padding: 4,
   },
@@ -1153,10 +1145,22 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     marginBottom: 16,
   },
+  responseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
+  },
   checkboxOption: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
+  },
+  responseLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginRight: 10,
   },
   checkbox: {
     fontSize: 20,
