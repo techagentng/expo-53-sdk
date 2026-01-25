@@ -153,20 +153,14 @@ const Profile = () => {
   }
 
 
-  // Show loading spinner only if we're still loading and haven't shown any content yet
-  if ((!isAppReady || !hasLoadedOnce) && loading) {
+  // Show loading spinner only while loading initial data
+  if (loading && !hasLoadedOnce) {
     console.log('Profile: Loading initial data...');
     return <LoadingImage />;
   }
 
-  // Show error state only if error exists AND it's not a login error AND we don't have a user
-  // Login errors should not block the profile page - user just needs to log in
-  const isLoginError = error && (
-    typeof error === 'object' && 
-    (error.errors === 'invalid email or password' || error.status === 'Unprocessable Entity')
-  );
-  
-  if (error && !isLoginError && !user) {
+  // Show error state only if there's a network error and no user data
+  if (error && !user) {
     console.log('Profile: ERROR STATE - showing error UI', { error, hasUser: !!user, timestamp: new Date().toISOString() });
     return (
       <View style={{ flex: 1 }}>
@@ -217,33 +211,6 @@ const Profile = () => {
             </View>
           </View>
         </Modal>
-      </View>
-    );
-  }
-  // Show a welcome message if no user data is available AND no token
-  // If we have a token, the user is logged in even if profile data is incomplete
-  const hasValidUser = user && (user.name || user.fullname || user.username || user.email || user.id);
-  const hasToken = reduxToken || access_token;
-  
-  if (!hasValidUser && !hasToken) {
-    return (
-      <View style={[styles.container, {justifyContent: 'center', alignItems: 'center'}]}>
-        <Text style={{ textAlign: 'center', color: COLORS.gray2, marginBottom: 20 }}>
-          Welcome! Sign in to access your profile.
-        </Text>
-        <TextButton
-          label="Sign In"
-          buttonContainerStyle={{ 
-            height: 50, 
-            width: 200,
-            alignItems: "center", 
-            justifyContent: "center", 
-            borderRadius: SIZES.radius, 
-            backgroundColor: "#0E9C67" 
-          }}
-          labelStyle={{ color: COLORS.white, fontWeight: "700", fontSize: 18 }}
-          onPress={() => router.push("/screens/Authentication/SignIn")}
-        />
       </View>
     );
   }

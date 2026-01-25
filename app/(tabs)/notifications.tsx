@@ -1,13 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '@/constants';
+import { AuthGuard } from '../../components/AuthGuard';
 
 export default function NotificationsTab() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Alerts</Text>
-      <Text style={styles.subtitle}>Notifications and alerts center...</Text>
-    </View>
+    <AuthGuard>
+      <View style={styles.container}>
+        <Text style={styles.title}>Alerts</Text>
+        <Text style={styles.subtitle}>Notifications and alerts center...</Text>
+      </View>
+    </AuthGuard>
   );
 }
 

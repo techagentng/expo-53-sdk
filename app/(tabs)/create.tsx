@@ -28,6 +28,7 @@ import * as FileSystem from 'expo-file-system';
 import axios from 'axios';
 import { MEDIA_UPLOAD } from '@/Redux/URL';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { AuthGuard } from '../../components/AuthGuard';
 
 const REPORT_CATEGORIES = [
   { id: 1, name: 'Crime', icon: '🚔', color: '#FF6B6B' },
@@ -952,23 +953,25 @@ export default function CreateTab() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Report an Issue</Text>
-      <Text style={styles.subtitle}>Select a category to report</Text>
+    <AuthGuard>
+      <View style={styles.container}>
+        <Text style={styles.title}>Report an Issue</Text>
+        <Text style={styles.subtitle}>Select a category to report</Text>
 
-      <FlatList
-        data={REPORT_CATEGORIES}
-        renderItem={renderCategoryItem}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={3}
-        columnWrapperStyle={styles.gridRow}
-        contentContainerStyle={styles.grid}
-        showsVerticalScrollIndicator={false}
-      />
+        <FlatList
+          data={REPORT_CATEGORIES}
+          renderItem={renderCategoryItem}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={3}
+          columnWrapperStyle={styles.gridRow}
+          contentContainerStyle={styles.grid}
+          showsVerticalScrollIndicator={false}
+        />
 
-      {renderReportForm()}
-      {renderMediaModal()}
-    </View>
+        {renderReportForm()}
+        {renderMediaModal()}
+      </View>
+    </AuthGuard>
   );
 }
 

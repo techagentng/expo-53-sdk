@@ -100,18 +100,22 @@ export default function RootLayout() {
       
       if ((isAuthenticated !== null && !isReady) || initTimeout) {
         try {
-          const didLogin = await AsyncStorage.getItem('didLogin');
           const accepted = await AsyncStorage.getItem('disclaimerAccepted');
+          
+          // Check if we have valid authentication even during timeout
+          const hasValidAuth = isAuthenticated || await AsyncStorage.getItem('access_token');
+          
           // If disclaimer not accepted yet, show Disclaimer first
-          let route = !accepted ? 'Disclaimer' : (isAuthenticated ? '(tabs)' : 'screens/Authentication/SignIn');
-          if (didLogin) {
-            route = '(tabs)';
-            // one-shot flag, clear it after using
-            AsyncStorage.removeItem('didLogin').catch(console.warn);
+          let route = !accepted ? 'Disclaimer' : (hasValidAuth ? '(tabs)' : 'screens/Authentication/SignIn');
+          
+          // Only use timeout route if we really don't have authentication
+          if (initTimeout && !hasValidAuth) {
+            route = 'screens/Authentication/SignIn';
           }
+          
           setInitialRoute(route);
 
-          console.log(`🎯 Setting initial route: ${route} (timeout: ${initTimeout})`);
+          console.log(`🎯 Setting initial route: ${route} (timeout: ${initTimeout}, hasAuth: ${!!hasValidAuth})`);
 
           // Clear any existing navigation state
           AsyncStorage.removeItem('navigationState').catch(console.warn);

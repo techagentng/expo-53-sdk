@@ -34,10 +34,15 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
 
   useEffect(() => {
     const hydrateIfNeeded = async () => {
-      if (!isAuthenticated && !checkedStorage) {
+      if (!checkedStorage) {
         const token = await AsyncStorage.getItem('access_token');
         console.log('🔐 AuthGuard: Checking AsyncStorage token:', !!token);
-        if (token) {
+        
+        if (isAuthenticated) {
+          // User is already authenticated, no need to hydrate
+          console.log('🔐 AuthGuard: User already authenticated, marking storage checked');
+          setCheckedStorage(true);
+        } else if (token) {
           console.log('🔐 AuthGuard: Token found in AsyncStorage, hydrating...');
           setHydrating(true);
           try {
@@ -94,7 +99,8 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
     checkAndRedirect();
   }, [isAuthenticated, redirecting, isLoading, hydrating, checkedStorage, refreshAuth]);
 
-  if (isLoading || hydrating) {
+  // Show loading only during hydration or initial storage check
+  if (hydrating || !checkedStorage) {
     return fallback || (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0E9C67" />
@@ -102,6 +108,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
     );
   }
 
+  // If not authenticated after checking storage, redirect (handled by useEffect)
   if (!isAuthenticated) {
     return fallback || (
       <View style={styles.loadingContainer}>

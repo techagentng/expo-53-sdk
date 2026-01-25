@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapIcon from '../components/icons/MapIcon';
 import PlusIcon from '../components/icons/PlusIcon';
 import BellIcon from '../components/icons/BellIcon';
+import { AuthGuard } from '../../components/AuthGuard';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -13,24 +14,24 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: '#0F5132',  // Dark green for active tabs
-        tabBarInactiveTintColor: '#198754',  // Medium dark green for inactive tabs
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: isDark ? '#fff' : '#000',
-          borderTopColor: isDark ? '#e0e0e0' : '#333',
-          height: 60 + insets.bottom,
-          paddingBottom: 8 + insets.bottom,
-          paddingTop: 8,
-        },
-        tabBarShowLabel: true,
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
-      }}>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: '#0F5132',  // Dark green for active tabs
+          tabBarInactiveTintColor: '#198754',  // Medium dark green for inactive tabs
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: isDark ? '#fff' : '#000',
+            borderTopColor: isDark ? '#e0e0e0' : '#333',
+            height: 60 + insets.bottom,
+            paddingBottom: 8 + insets.bottom,
+            paddingTop: 8,
+          },
+          tabBarShowLabel: true,
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: '600',
+          },
+        }}>
       <Tabs.Screen
         name="index"
         options={{
