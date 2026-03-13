@@ -29,6 +29,7 @@ interface FeedItem {
   place: string;
   reportType: string;
   createdAt: string;
+  created_at?: string;
   updatedAt?: string;
   
   // Engagement metrics
@@ -172,7 +173,7 @@ const Feed = ({ item, onLikePress }: FeedProps) => {
               </View>
             </View>
             <View style={styles.reportDaTim}>
-              <Text style={styles.date}>{item.createdAt}</Text>
+              <Text style={styles.date}>{item.created_at || item.createdAt}</Text>
               <View
                 style={{
                   width: 2,

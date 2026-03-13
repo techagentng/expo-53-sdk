@@ -29,35 +29,25 @@ import axios from 'axios';
 import { MEDIA_UPLOAD } from '@/Redux/URL';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { AuthGuard } from '../../components/AuthGuard';
+import { getCategories, getSubReports, transformCategoriesForFrontend, Category } from '../../services/categoryService';
 
-const REPORT_CATEGORIES = [
-  { id: 1, name: 'Crime', icon: '🚔', color: '#FF6B6B' },
-  { id: 2, name: 'Health', icon: '🏥', color: '#45B7D1' },
-  { id: 3, name: 'Education', icon: '📚', color: '#96CEB4' },
-  { id: 4, name: 'Roads', icon: '🛣️', color: '#4ECDC4' },
-  { id: 5, name: 'Fake products', icon: '📦', color: '#FFEAA7' },
-  { id: 6, name: 'Election', icon: '🗳️', color: '#DDA0DD' },
-  { id: 7, name: 'Water Supply', icon: '💧', color: '#A3E4D7' },
-  { id: 8, name: 'Electricity', icon: '⚡', color: '#F9E79F' },
-  { id: 9, name: 'Environment', icon: '🌳', color: '#FFEAA7' },
-  { id: 10, name: 'Utilities', icon: '⚡', color: '#DDA0DD' },
-  { id: 11, name: 'Transportation', icon: '🚇', color: '#98D8C8' },
-  { id: 12, name: 'Housing', icon: '🏠', color: '#F7DC6F' },
-  { id: 13, name: 'Public Safety', icon: '🛡️', color: '#BB8FCE' },
-  { id: 14, name: 'Social Services', icon: '🤝', color: '#85C1E9' },
-  { id: 15, name: 'Local Government', icon: '🏛️', color: '#F8C471' },
-  { id: 16, name: 'Emergency', icon: '🚨', color: '#EC7063' },
-  { id: 17, name: 'Infrastructure', icon: '🏗️', color: '#82E0AA' },
-  { id: 18, name: 'Waste Management', icon: '🗑️', color: '#AED6F1' },
-  { id: 19, name: 'Telecommunications', icon: '📡', color: '#D7BDE2' },
-  { id: 20, name: 'Public Transport', icon: '🚌', color: '#A8E6CF' },
-  { id: 21, name: 'Street Lighting', icon: '💡', color: '#FADBD8' },
-  { id: 22, name: 'Sanitation', icon: '🚽', color: '#ABEBC6' },
-  { id: 23, name: 'Noise Pollution', icon: '🔊', color: '#F9CA24' },
+// Dynamic categories will be loaded from API
+const DEFAULT_CATEGORIES = [
+  { id: 1, name: 'Crime', icon: '🚔', color: '#FF6B6B', backendName: 'crime' },
+  { id: 2, name: 'Health', icon: '🏥', color: '#45B7D1', backendName: 'healthcare' },
+  { id: 3, name: 'Education', icon: '📚', color: '#96CEB4', backendName: 'education' },
+  { id: 4, name: 'Election', icon: '🗳️', color: '#DDA0DD', backendName: 'election' },
+  { id: 5, name: 'Electricity', icon: '⚡', color: '#F9E79F', backendName: 'power' },
+  { id: 6, name: 'Water Supply', icon: '💧', color: '#A3E4D7', backendName: 'portablewater' },
+  { id: 7, name: 'Fake products', icon: '📦', color: '#FFEAA7', backendName: 'fakeproduct' },
 ];
 
 export default function CreateTab() {
-  const [selectedCategory, setSelectedCategory] = useState<typeof REPORT_CATEGORIES[0] | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<typeof DEFAULT_CATEGORIES[0] | null>(null);
+  const [reportCategories, setReportCategories] = useState(DEFAULT_CATEGORIES);
+  const [subReports, setSubReports] = useState<any[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingSubReports, setLoadingSubReports] = useState(false);
   const [showReportForm, setShowReportForm] = useState(false);
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [selectedState, setSelectedState] = useState<string | null>(null);
@@ -74,6 +64,7 @@ export default function CreateTab() {
   // Special fields for different categories
   const [roadName, setRoadName] = useState<string>('');
   const [outageLength, setOutageLength] = useState<string>('');
+  const [showOutageDropdown, setShowOutageDropdown] = useState<boolean>(false);
   const [causeOfAccident, setCauseOfAccident] = useState<string>('');
   const [reportType, setReportType] = useState<string>('');
   const [emergencyResponse, setEmergencyResponse] = useState<boolean | null>(null);
@@ -100,7 +91,48 @@ export default function CreateTab() {
 
   useEffect(() => {
     checkAuth();
+    loadCategories();
   }, []);
+
+  // Load categories from API
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const categories = await getCategories();
+      const transformedCategories = transformCategoriesForFrontend(categories);
+      setReportCategories(transformedCategories);
+      console.log('Categories loaded:', transformedCategories);
+    } catch (error) {
+      console.error('Failed to load categories, using defaults:', error);
+      // Keep using default categories if API fails
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  // Load sub-reports when category or state changes
+  useEffect(() => {
+    if (selectedCategory || selectedState) {
+      loadSubReports();
+    }
+  }, [selectedCategory, selectedState]);
+
+  const loadSubReports = async () => {
+    try {
+      setLoadingSubReports(true);
+      const category = selectedCategory?.backendName || undefined;
+      const stateName = selectedState || undefined;
+      
+      const subReportsData = await getSubReports(category, stateName);
+      setSubReports(subReportsData);
+      console.log('Sub-reports loaded:', subReportsData);
+    } catch (error) {
+      console.error('Failed to load sub-reports:', error);
+      setSubReports([]);
+    } finally {
+      setLoadingSubReports(false);
+    }
+  };
 
   // Log when media modal visibility changes
   useEffect(() => {
@@ -116,7 +148,7 @@ export default function CreateTab() {
     }
   };
 
-  const handleCategorySelect = (category: typeof REPORT_CATEGORIES[0]) => {
+  const handleCategorySelect = (category: typeof DEFAULT_CATEGORIES[0]) => {
     setSelectedCategory(category);
     setShowReportForm(true);
   };
@@ -271,7 +303,13 @@ export default function CreateTab() {
         formData.append('landmark', reportData.location.trim());
       }
 
-      console.log('FormData contents:', formData);
+      console.log('FormData contents:');
+      // FormData doesn't have entries() in React Native, so we'll log key fields
+      console.log('description:', reportData.description.trim());
+      console.log('category:', selectedCategory.name);
+      console.log('sub_report_type:', subReportType || selectedCategory.name);
+      console.log('state_name:', selectedState || '');
+      console.log('lga_name:', selectedLocalGov || '');
 
       // Dispatch the createReport action
       const result = await dispatch(createReport({ formData, token }));
@@ -329,7 +367,7 @@ export default function CreateTab() {
     }
   };
 
-  const renderCategoryItem = ({ item }: { item: typeof REPORT_CATEGORIES[0] }) => (
+  const renderCategoryItem = ({ item }: { item: typeof reportCategories[0] }) => (
     <TouchableOpacity
       style={styles.categoryItem}
       onPress={() => handleCategorySelect(item)}
@@ -363,14 +401,18 @@ export default function CreateTab() {
           <Text style={styles.label}>Sub Report Type</Text>
           <View style={styles.pickerContainer}>
             <RNPickerSelect
-              placeholder={{ label: "Select type of incident", value: null }}
+              placeholder={{ 
+                label: loadingSubReports ? "Loading sub-reports..." : "Select type of incident", 
+                value: null 
+              }}
               onValueChange={(value) => setSubReportType(value || '')}
-              items={
-                selectedCategory
-                  ? INCIDENT_TYPES[getIncidentTypesKey(selectedCategory.name)] || []
-                  : []
-              }
+              items={subReports.map(subReport => ({
+                label: subReport.sub_report_type,
+                value: subReport.sub_report_type,
+                key: subReport.id
+              }))}
               value={subReportType}
+              disabled={loadingSubReports}
               style={{
                 inputIOS: styles.pickerInput,
                 inputAndroid: styles.pickerInput,
@@ -752,9 +794,10 @@ export default function CreateTab() {
   const renderSpecialFields = () => {
     if (!selectedCategory) return null;
 
-    const categoryName = selectedCategory.name.toLowerCase();
+    // Use backend category name for API calls
+    const backendCategoryName = selectedCategory.backendName;
 
-    switch (categoryName) {
+    switch (backendCategoryName) {
       case 'roads':
         return (
           <View>
@@ -783,32 +826,59 @@ export default function CreateTab() {
           </View>
         );
 
-      case 'electricity':
       case 'power':
         return (
           <View>
-            <View style={styles.twoColumnRow}>
-              <TextInput
-                style={[styles.textInput, styles.twoColumnLeft]}
-                placeholder="Outage (optional)"
-                value={outageLength}
-                onChangeText={setOutageLength}
-              />
-
-              <View style={[styles.ratingContainer, styles.twoColumnRight, { marginBottom: 0, justifyContent: 'flex-end' }]}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <TouchableOpacity
-                    key={star}
-                    onPress={() => setRating(star)}
-                    style={styles.starButton}
-                  >
-                    <Text style={[styles.star, rating >= star && styles.starSelected]}>
-                      ★
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+            <Text style={styles.label}>Outage Duration</Text>
+            <TouchableOpacity
+              style={styles.dropdownButton}
+              onPress={() => setShowOutageDropdown(true)}
+            >
+              <Text style={styles.dropdownText}>
+                {outageLength || 'Select outage duration'}
+              </Text>
+              <Text style={styles.dropdownArrow}>▼</Text>
+            </TouchableOpacity>
+            
+            <Modal
+              visible={showOutageDropdown}
+              transparent={true}
+              animationType="fade"
+              onRequestClose={() => setShowOutageDropdown(false)}
+            >
+              <TouchableOpacity
+                style={styles.modalOverlay}
+                activeOpacity={1}
+                onPress={() => setShowOutageDropdown(false)}
+              >
+                <View style={styles.dropdownModal}>
+                  <Text style={styles.dropdownTitle}>Select Outage Duration</Text>
+                  {[
+                    'Less than 1 hour',
+                    '1-3 hours',
+                    '3-6 hours',
+                    '6-12 hours',
+                    '12-24 hours',
+                    '1-2 days',
+                    '3-5 days',
+                    '1 week',
+                    '2 weeks',
+                    '3+ weeks'
+                  ].map((duration) => (
+                    <TouchableOpacity
+                      key={duration}
+                      style={styles.dropdownOption}
+                      onPress={() => {
+                        setOutageLength(duration);
+                        setShowOutageDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownOptionText}>{duration}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </TouchableOpacity>
+            </Modal>
           </View>
         );
 
@@ -890,7 +960,6 @@ export default function CreateTab() {
           </View>
         );
 
-      case 'health':
       case 'healthcare':
         return (
           <View>
@@ -911,19 +980,39 @@ export default function CreateTab() {
           </View>
         );
 
-      case 'emergency':
-      case 'accidents':
+      case 'education':
         return (
           <View>
+            <Text style={styles.label}>School Name (Optional)</Text>
             <TextInput
               style={styles.textInput}
-              placeholder="Cause of incident"
-              value={causeOfAccident}
+              placeholder="Enter school name"
+              value={causeOfAccident} // Reusing existing state for simplicity
               onChangeText={setCauseOfAccident}
             />
+          </View>
+        );
 
-            <View style={[styles.checkboxContainer, styles.responseRow]}>
-              <Text style={styles.responseLabel}>Response:</Text>
+      case 'election':
+        return (
+          <View>
+            <Text style={styles.label}>Polling Station Details</Text>
+            <TextInput
+              style={[styles.textInput, styles.textArea]}
+              multiline
+              numberOfLines={3}
+              placeholder="Describe the election issue and polling station details..."
+              value={causeOfAccident} // Reusing existing state
+              onChangeText={setCauseOfAccident}
+            />
+          </View>
+        );
+
+      case 'portablewater':
+        return (
+          <View>
+            <Text style={styles.label}>Water Supply Issue Type</Text>
+            <View style={styles.checkboxContainer}>
               <TouchableOpacity
                 style={styles.checkboxOption}
                 onPress={() => setEmergencyResponse(true)}
@@ -931,7 +1020,7 @@ export default function CreateTab() {
                 <Text style={[styles.checkbox, emergencyResponse === true && styles.checkboxSelected]}>
                   {emergencyResponse === true ? '☑' : '☐'}
                 </Text>
-                <Text style={styles.checkboxLabel}>Yes</Text>
+                <Text style={styles.checkboxLabel}>No Water Supply</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -941,9 +1030,22 @@ export default function CreateTab() {
                 <Text style={[styles.checkbox, emergencyResponse === false && styles.checkboxSelected]}>
                   {emergencyResponse === false ? '☑' : '☐'}
                 </Text>
-                <Text style={styles.checkboxLabel}>No</Text>
+                <Text style={styles.checkboxLabel}>Contaminated Water</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        );
+
+      case 'fakeproduct':
+        return (
+          <View>
+            <Text style={styles.label}>Product Details</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Brand name and product type"
+              value={causeOfAccident} // Reusing existing state
+              onChangeText={setCauseOfAccident}
+            />
           </View>
         );
 
@@ -958,15 +1060,21 @@ export default function CreateTab() {
         <Text style={styles.title}>Report an Issue</Text>
         <Text style={styles.subtitle}>Select a category to report</Text>
 
-        <FlatList
-          data={REPORT_CATEGORIES}
-          renderItem={renderCategoryItem}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={3}
-          columnWrapperStyle={styles.gridRow}
-          contentContainerStyle={styles.grid}
-          showsVerticalScrollIndicator={false}
-        />
+        {loadingCategories ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading categories...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={reportCategories}
+            renderItem={renderCategoryItem}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={3}
+            columnWrapperStyle={styles.gridRow}
+            contentContainerStyle={styles.grid}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         {renderReportForm()}
         {renderMediaModal()}
@@ -993,6 +1101,17 @@ const styles = StyleSheet.create({
     color: COLORS.darkGray,
     textAlign: 'center',
     marginBottom: 30,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: COLORS.primary,
+    textAlign: 'center',
   },
   grid: {
     justifyContent: 'center',
@@ -1253,5 +1372,56 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: COLORS.lightGray1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: COLORS.darkGray,
+  },
+  dropdownArrow: {
+    fontSize: 12,
+    color: COLORS.lightGray1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  dropdownOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray1,
+  },
+  dropdownOptionText: {
+    fontSize: 16,
+    color: COLORS.darkGray,
   },
 });

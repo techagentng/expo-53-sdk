@@ -30,3 +30,7 @@ export const REPORT_USER = `${HOST}/api/v1/users/report`;
 export const FOLLOW_REPORT = `${HOST}/api/v1/reports/follow`;
 export const GET_TOP_STATES = `${HOST}/api/v1/reports/top-states`;
 export const GET_REPORTS_BY_STATE = `${HOST}/api/v1/reports/by-state`;
+
+// New endpoints for categories and sub-reports
+export const GET_CATEGORIES = `${HOST}/api/v1/categories`;
+export const GET_SUB_REPORTS = `${HOST}/api/v1/report/sub_reports`;

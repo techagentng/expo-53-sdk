@@ -54,6 +54,7 @@ interface FeedItem {
   fullname?: string;
   username?: string;
   time_of_incidence?: string;
+  created_at?: string;
   state_name?: string;
   lga_name?: string;
   category?: string;
@@ -865,11 +866,11 @@ const ApiFeed = ({ item }: { item: FeedItem }) => {
               )}
             </View>
             <View style={styles.reportDaTim}>
-              {item?.time_of_incidence && (
+              {item?.created_at && (
                 <Text style={styles.date}>
                   {
                     //item?.date_of_incidence
-                    formatDate(item?.time_of_incidence)
+                    formatDate(item?.created_at)
                   }
                 </Text>
               )}

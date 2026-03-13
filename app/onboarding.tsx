@@ -8,6 +8,7 @@ import {
   useColorScheme,
   View
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Onboarding from 'react-native-onboarding-swiper';
 
 import { useAuth } from '@/provider/AuthContext';
@@ -15,6 +16,7 @@ import { useAuth } from '@/provider/AuthContext';
 const OnboardingScreen = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
 
   const handleGetStarted = () => {
     router.replace('/screens/InitialSignUp');
@@ -52,7 +54,7 @@ const OnboardingScreen = () => {
         onSkip={handleGetStarted}
         showSkip={true}
         bottomBarHighlight={false}
-        bottomBarHeight={100}
+        bottomBarHeight={100 + insets.bottom}
         containerStyles={styles.onboardingContainer}
         imageContainerStyles={styles.onboardingImageContainer}
       />
