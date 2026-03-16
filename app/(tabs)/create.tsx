@@ -128,11 +128,27 @@ export default function CreateTab() {
       const category = selectedCategory?.backendName || undefined;
       const stateName = selectedState || undefined;
       
+      console.log('Loading sub-reports with:', { category, stateName });
+      
       const subReportsData = await getSubReports(category, stateName);
-      setSubReports(subReportsData);
-      console.log('Sub-reports loaded:', subReportsData);
+      
+      // Remove duplicates based on sub_report_type
+      const uniqueSubReports = subReportsData.filter((subReport, index, self) => 
+        self.findIndex((s) => s.sub_report_type === subReport.sub_report_type) === index
+      );
+      
+      setSubReports(uniqueSubReports);
+      console.log('Sub-reports loaded successfully:', uniqueSubReports);
+      console.log('Original count:', subReportsData.length, 'Unique count:', uniqueSubReports.length);
+      
+      // Log duplicates for debugging
+      const duplicates = subReportsData.length - uniqueSubReports.length;
+      if (duplicates > 0) {
+        console.warn(`Removed ${duplicates} duplicate sub-reports for category: ${category}`);
+      }
     } catch (error) {
       console.error('Failed to load sub-reports:', error);
+      console.log('Setting empty sub-reports array');
       setSubReports([]);
     } finally {
       setLoadingSubReports(false);

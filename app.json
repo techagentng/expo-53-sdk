@@ -30,7 +30,7 @@
         "backgroundColor": "#0E9C67"
       },
       "package": "com.kennedy757.citixenx",
-      "versionCode": 81,
+      "versionCode": 82,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",

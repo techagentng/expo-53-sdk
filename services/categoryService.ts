@@ -66,6 +66,9 @@ export const getSubReports = async (
     
     if (token) {
       headers.Authorization = `Bearer ${token}`;
+      console.log('Using token for sub-reports API call');
+    } else {
+      console.log('No token found for sub-reports API call');
     }
     
     // Only add parameters if they have values (avoid undefined)
@@ -76,14 +79,33 @@ export const getSubReports = async (
       params.state_name = stateName;
     }
 
+    console.log('Making sub-reports API call:', {
+      url: GET_SUB_REPORTS,
+      params,
+      hasToken: !!token
+    });
+
     const response = await axios.get<SubReportsResponse>(GET_SUB_REPORTS, {
       params,
       headers
     });
     
+    console.log('Sub-reports API response:', {
+      status: response.status,
+      dataLength: response.data.data?.length || 0,
+      data: response.data
+    });
+    
     return response.data.data;
   } catch (error) {
     console.error('Error fetching sub-reports:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('API Error Details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+    }
     throw error;
   }
 };
