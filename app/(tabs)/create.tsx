@@ -31,15 +31,18 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { AuthGuard } from '../../components/AuthGuard';
 import { getCategories, getSubReports, transformCategoriesForFrontend, Category } from '../../services/categoryService';
 
-// Dynamic categories will be loaded from API
+// Dynamic categories will be loaded from API (now includes all 10 database categories)
 const DEFAULT_CATEGORIES = [
   { id: 1, name: 'Crime', icon: '🚔', color: '#FF6B6B', backendName: 'crime' },
   { id: 2, name: 'Health', icon: '🏥', color: '#45B7D1', backendName: 'healthcare' },
   { id: 3, name: 'Education', icon: '📚', color: '#96CEB4', backendName: 'education' },
-  { id: 4, name: 'Election', icon: '🗳️', color: '#DDA0DD', backendName: 'election' },
-  { id: 5, name: 'Electricity', icon: '⚡', color: '#F9E79F', backendName: 'power' },
-  { id: 6, name: 'Water Supply', icon: '💧', color: '#A3E4D7', backendName: 'portablewater' },
-  { id: 7, name: 'Fake products', icon: '📦', color: '#FFEAA7', backendName: 'fakeproduct' },
+  { id: 4, name: 'Roads', icon: '🛣️', color: '#4ECDC4', backendName: 'roads' },
+  { id: 5, name: 'Fake Products', icon: '📦', color: '#FFEAA7', backendName: 'fakeproduct' },
+  { id: 6, name: 'Election', icon: '🗳️', color: '#DDA0DD', backendName: 'election' },
+  { id: 7, name: 'Portable Water', icon: '💧', color: '#A3E4D7', backendName: 'portablewater' },
+  { id: 8, name: 'Power', icon: '⚡', color: '#F9E79F', backendName: 'power' },
+  { id: 9, name: 'Environment', icon: '🌳', color: '#FFEAA7', backendName: 'environment' },
+  { id: 10, name: 'Housing', icon: '🏠', color: '#F7DC6F', backendName: 'housing' },
 ];
 
 export default function CreateTab() {
@@ -100,8 +103,10 @@ export default function CreateTab() {
       setLoadingCategories(true);
       const categories = await getCategories();
       const transformedCategories = transformCategoriesForFrontend(categories);
+      
+      // Backend now standardizes to exactly 10 categories - no filtering needed
       setReportCategories(transformedCategories);
-      console.log('Categories loaded:', transformedCategories);
+      console.log('Categories loaded from standardized backend:', transformedCategories);
     } catch (error) {
       console.error('Failed to load categories, using defaults:', error);
       // Keep using default categories if API fails
@@ -243,8 +248,8 @@ export default function CreateTab() {
     try {
       // Create FormData for the API call
       const formData = new FormData();
-      formData.append('category', selectedCategory.name);
-      formData.append('sub_report_type', subReportType || selectedCategory.name);
+      formData.append('category', selectedCategory.backendName); // ✅ Use backend name
+      formData.append('sub_report_type', subReportType || selectedCategory.backendName);
       formData.append('description', reportData.description.trim());
       formData.append('state_name', selectedState || '');
       formData.append('lga_name', selectedLocalGov || '');
@@ -252,7 +257,7 @@ export default function CreateTab() {
       formData.append('date_of_incidence', new Date().toISOString());
 
       // Add special fields based on category
-      const categoryName = selectedCategory.name.toLowerCase();
+      const categoryName = selectedCategory.backendName; // ✅ Use backend name
 
       if (categoryName === 'roads') {
         if (roadName.trim()) {
@@ -306,8 +311,8 @@ export default function CreateTab() {
       console.log('FormData contents:');
       // FormData doesn't have entries() in React Native, so we'll log key fields
       console.log('description:', reportData.description.trim());
-      console.log('category:', selectedCategory.name);
-      console.log('sub_report_type:', subReportType || selectedCategory.name);
+      console.log('category:', selectedCategory.backendName); // ✅ Use backend name
+      console.log('sub_report_type:', subReportType || selectedCategory.backendName);
       console.log('state_name:', selectedState || '');
       console.log('lga_name:', selectedLocalGov || '');
 
@@ -1045,6 +1050,66 @@ export default function CreateTab() {
               placeholder="Brand name and product type"
               value={causeOfAccident} // Reusing existing state
               onChangeText={setCauseOfAccident}
+            />
+          </View>
+        );
+
+      case 'environment':
+        return (
+          <View>
+            <Text style={styles.label}>Environmental Issue Type</Text>
+            <View style={styles.checkboxContainer}>
+              <TouchableOpacity
+                style={styles.checkboxOption}
+                onPress={() => setEmergencyResponse(true)}
+              >
+                <Text style={[styles.checkbox, emergencyResponse === true && styles.checkboxSelected]}>
+                  {emergencyResponse === true ? '☑' : '☐'}
+                </Text>
+                <Text style={styles.checkboxLabel}>Air Pollution</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.checkboxOption}
+                onPress={() => setEmergencyResponse(false)}
+              >
+                <Text style={[styles.checkbox, emergencyResponse === false && styles.checkboxSelected]}>
+                  {emergencyResponse === false ? '☑' : '☐'}
+                </Text>
+                <Text style={styles.checkboxLabel}>Water Pollution</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <TextInput
+              style={[styles.textInput, styles.textArea]}
+              multiline
+              numberOfLines={3}
+              placeholder="Describe the environmental issue in detail..."
+              value={causeOfAccident}
+              onChangeText={setCauseOfAccident}
+            />
+          </View>
+        );
+
+      case 'housing':
+        return (
+          <View>
+            <Text style={styles.label}>Housing Issue Type</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Type of housing issue (rent, maintenance, etc.)"
+              value={causeOfAccident}
+              onChangeText={setCauseOfAccident}
+            />
+            
+            <Text style={styles.label}>Property Details</Text>
+            <TextInput
+              style={[styles.textInput, styles.textArea]}
+              multiline
+              numberOfLines={3}
+              placeholder="Property address and additional details..."
+              value={roadName} // Reusing existing state
+              onChangeText={setRoadName}
             />
           </View>
         );

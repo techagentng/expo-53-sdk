@@ -93,6 +93,7 @@ export const getSubReports = async (
  */
 export const transformCategoriesForFrontend = (categories: Category[]) => {
   const categoryIcons: Record<string, string> = {
+    // Backend standardized categories (exactly 10)
     crime: '🚔',
     healthcare: '🏥',
     education: '📚',
@@ -122,7 +123,7 @@ export const transformCategoriesForFrontend = (categories: Category[]) => {
     id: index + 1,
     name: category.display_name,
     backendName: category.name, // Store backend name for API calls
-    icon: categoryIcons[category.name] || '📋',
-    color: categoryColors[category.name] || '#CCCCCC',
+    icon: categoryIcons[category.name.toLowerCase()] || '📋',
+    color: categoryColors[category.name.toLowerCase()] || '#CCCCCC',
   }));
 };
